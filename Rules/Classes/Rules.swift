@@ -4,37 +4,40 @@
 //  License: MIT, included below
 //
 
-public enum AnyAnswer: Equatable {
-    case bool(Bool)
-    case int(Int)
-    case float(Float)
-    case double(Double)
-    case string(String)
-}
+/// Additional namespace for Rules-specific helpers to avoid ambiguity when
+/// using other libraries with similar types.
+public enum Rules {
 
-/// - note: a `Rule` is invalid if its (LHS) predicate looks up the (RHS) `key`
-public struct Rule {
+    public enum Result<E, V>: Equatable where E: Equatable, V: Equatable {
+        case failed(E)
+        case success(V)
 
-    public typealias Answer = AnyAnswer
-
-    public enum FiringError: Swift.Error, Equatable {
-        case failed
-        case invalidRHSValue(String)
+        public func bimap<W: Equatable, F: Equatable>(
+            _ failed: (E) -> F,
+            _ success: (V) -> W
+            ) -> Result<F, W>
+        {
+            switch self {
+            case .failed(let e): return .failed(failed(e))
+            case .success(let v): return .success(success(v))
+            }
+        }
     }
 
-    public typealias FiringResult = Rules.Result<FiringError, Answer>
-
-    public typealias Assignment = (Rule, Context) -> FiringResult
-
-    public let priority: Int
-    public let predicate: Predicate
-    public let key: Context.RHSKey
-    public let value: Context.RHSValue
-    public let assignment: Assignment
-
-    func fire(in context: Context) -> FiringResult {
-        return assignment(self, context)
+    static func flip<A, B, C>(
+        _ f: @escaping (A) -> (B) -> C
+        ) -> (B) -> (A) -> C
+    {
+        return { b in { a in f(a)(b) } }
     }
+
+    static func curry<A, B, C>(
+        _ f: @escaping (A, B) -> C
+        ) -> (A) -> (B) -> C
+    {
+        return { a in { b in f(a, b) } }
+    }
+
 }
 
 //  Created by Jim Roepcke on 2018-06-24.
