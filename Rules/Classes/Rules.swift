@@ -8,15 +8,22 @@
 /// using other libraries with similar types.
 public enum Rules {
 
-    public enum Result<E, V>: Equatable where E: Equatable, V: Equatable {
+    public enum Result<E, V> {
 
         case failed(E)
         case success(V)
 
-        public func bimap<W: Equatable, F: Equatable>(
+        public var value: V? {
+            switch self {
+            case .failed: return nil
+            case .success(let value): return value
+            }
+        }
+
+        public func bimap<W, F>(
             _ failed: (E) -> F,
             _ success: (V) -> W
-            ) -> Result<F, W>
+            ) -> Rules.Result<F, W>
         {
             switch self {
             case .failed(let e): return .failed(failed(e))
@@ -41,6 +48,17 @@ public enum Rules {
         return { a in { b in f(a, b) } }
     }
 
+}
+
+extension Rules.Result: Equatable where E: Equatable, V: Equatable {
+
+    public static func == <E: Equatable, V: Equatable>(lhs: Rules.Result<E, V>, rhs: Rules.Result<E, V>) -> Bool {
+        switch (lhs, rhs) {
+        case let (.failed(le), .failed(re)): return le == re
+        case let (.success(lv), .success(rv)): return lv == rv
+        default: return false
+        }
+    }
 }
 
 //  Created by Jim Roepcke on 2018-06-24.
