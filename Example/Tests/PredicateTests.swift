@@ -10,6 +10,7 @@ typealias SUT = Predicate
 
 import Quick
 import Nimble
+import Foundation
 
 @testable import Rules
 
@@ -17,6 +18,96 @@ class PredicateTests: QuickSpec {
     override func spec() {
 
         describe("Predicate") {
+
+            describe("Encodable") {
+
+                it("can encode .false") {
+                    let sut = SUT.false
+                    let expected: [AnyHashable: Any] = ["type": "false"]
+                    switch jsonObject(for: sut) {
+                    case .failed(let error): fail("\(error)")
+                    case .success(let jsonObject):
+                        expect(jsonObject == expected).to(beTrue())
+                    }
+                }
+
+                it("can encode .true") {
+                    let sut = SUT.true
+                    let expected: [AnyHashable: Any] = ["type": "true"]
+                    switch jsonObject(for: sut) {
+                    case .failed(let error): fail("\(error)")
+                    case .success(let jsonObject):
+                        expect(jsonObject == expected).to(beTrue())
+                    }
+            }
+
+                it("can encode .not(.true)") {
+                    let sut = SUT.not(.true)
+                    let expected: [AnyHashable: Any] = [
+                        "type": "not",
+                        "operand": ["type": "true"]
+                    ]
+                    switch jsonObject(for: sut) {
+                    case .failed(let error): fail("\(error)")
+                    case .success(let jsonObject):
+                        expect(jsonObject == expected).to(beTrue())
+                    }
+                }
+
+                it("can encode .comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .predicate(.true))") {
+                    let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .predicate(.true))
+                    let expected: [AnyHashable: Any] = [
+                        "type": "comparison",
+                        "lhs": ["predicate": ["type": "true"]],
+                        "op": "isEqualTo",
+                        "rhs": ["predicate": ["type": "true"]]
+                    ]
+                    switch jsonObject(for: sut) {
+                    case .failed(let error): fail("\(error)")
+                    case .success(let jsonObject):
+                        expect(jsonObject == expected).to(beTrue())
+                    }
+                }
+            }
+
+            describe("Decodable") {
+
+                it("can decode false") {
+                    let sut = SUT.false
+                    let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
+                        = data(for: sut).bimap(Rules.id, decoded(from:))
+                    switch result {
+                    case .failed(let error): fail("\(error)")
+                    case .success(.failed(let error)): fail("\(error)")
+                    case .success(.success(let predicate)):
+                        expect(predicate) == sut
+                    }
+                }
+
+                it("can decode true") {
+                    let sut = SUT.true
+                    let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
+                        = data(for: sut).bimap(Rules.id, decoded(from:))
+                    switch result {
+                    case .failed(let error): fail("\(error)")
+                    case .success(.failed(let error)): fail("\(error)")
+                    case .success(.success(let predicate)):
+                        expect(predicate) == sut
+                    }
+                }
+
+                it("can decode .comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .predicate(.true))") {
+                    let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .predicate(.true))
+                    let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
+                        = data(for: sut).bimap(Rules.id, decoded(from:))
+                    switch result {
+                    case .failed(let error): fail("\(error)")
+                    case .success(.failed(let error)): fail("\(error)")
+                    case .success(.success(let predicate)):
+                        expect(predicate) == sut
+                    }
+                }
+            }
 
             describe("evaluation") {
 
@@ -204,7 +295,191 @@ class PredicateTests: QuickSpec {
                     expect(result) == .success(.init(value: true, keys: ["test"]))
                 }
             }
+
+
+            describe("parse(format:)") {
+                it("replaces true with TRUEPREDICATE") {
+                    let sut = " true    "
+                    let result = parse(format: sut)
+                    expect(result.predicateFormat) == "TRUEPREDICATE"
+                }
+            }
+
+            describe("convert(ns:)") {
+
+                it("can convert TRUEPREDICATE") {
+                    let sut = "TRUEPREDICATE AND TRUEPREDICATE"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(.and([.true, .true]))
+                }
+
+                it("can convert TRUEPREDICATE AND TRUEPREDICATE") {
+                    let sut = "TRUEPREDICATE AND TRUEPREDICATE"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(.and([.true, .true]))
+                }
+
+                it("can convert someKey == 'someValue' AND TRUEPREDICATE") {
+                    let sut = "someKey == 'someValue' AND TRUEPREDICATE"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(
+                        .and(
+                            [
+                                .comparison(
+                                    lhs: .key(.init(value: "someKey")),
+                                    op: .isEqualTo,
+                                    rhs: .value(.string("someValue"))
+                                ),
+                                .true
+                            ]
+                        )
+                    )
+                }
+
+                it("can convert someKey == -42") {
+                    let sut = "someKey == -42"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(
+                        .comparison(
+                            lhs: .key(.init(value: "someKey")),
+                            op: .isEqualTo,
+                            rhs: .value(.int(-42))
+                        )
+                    )
+                }
+
+                it("can convert someKey == false") {
+                    let sut = "someKey == false"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(
+                        .comparison(
+                            lhs: .key(.init(value: "someKey")),
+                            op: .isEqualTo,
+                            rhs: .predicate(.false)
+                        )
+                    )
+                }
+
+                it("can convert someKey == true") {
+                    let sut = "someKey == true"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(
+                        .comparison(
+                            lhs: .key(.init(value: "someKey")),
+                            op: .isEqualTo,
+                            rhs: .predicate(.true)
+                        )
+                    )
+                }
+
+                it("can convert someKey == 2.5") {
+                    let sut = "someKey == 2.5"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(
+                        .comparison(
+                            lhs: .key(.init(value: "someKey")),
+                            op: .isEqualTo,
+                            rhs: .value(.double(2.5))
+                        )
+                    )
+                }
+
+                it("can convert 1.5 < 2.5") {
+                    let sut = "1.5 < 2.5"
+                    let ns = parse(format: sut)
+                    let predicate = convert(ns: ns)
+                    expect(predicate) == .success(
+                        .comparison(
+                            lhs: .value(.double(1.5)),
+                            op: .isLessThan,
+                            rhs: .value(.double(2.5))
+                        )
+                    )
+                }
+           }
+
         }
+    }
+}
+
+enum RulesEncodingError: Error, Equatable {
+    case dataEncodingFailed
+    case stringEncodingFailed
+    case JSONSerializationFailed
+    case JSONSerializationTypeMismatch
+}
+
+typealias DataEncodingResult = Rules.Result<RulesEncodingError, Data>
+
+func data<T: Encodable>(for encodable: T) -> DataEncodingResult {
+    do {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+
+        let data = try encoder.encode(encodable)
+        return .success(data)
+    } catch {
+        return .failed(RulesEncodingError.dataEncodingFailed)
+    }
+}
+
+typealias StringEncodingResult = Rules.Result<RulesEncodingError, String>
+
+func string<T: Encodable>(for encodable: T) -> StringEncodingResult {
+    switch data(for: encodable) {
+    case .failed(let error):
+        return .failed(error)
+    case .success(let data):
+        return String(data: data, encoding: .utf8)
+            .map { .success($0) }
+            ?? .failed(.stringEncodingFailed)
+    }
+}
+
+typealias JSONObjectEncodingResult = Rules.Result<RulesEncodingError, [AnyHashable: Any]>
+
+func jsonObject<T: Encodable>(for encodable: T) -> JSONObjectEncodingResult {
+    switch data(for: encodable) {
+    case .failed(let error):
+        return .failed(error)
+    case .success(let data):
+        do {
+            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+            return (jsonObject as? [AnyHashable: Any])
+                .map { .success($0) }
+                ?? .failed(.JSONSerializationTypeMismatch)
+        } catch {
+            return .failed(.JSONSerializationFailed)
+        }
+    }
+}
+
+func == (left: [AnyHashable: Any], right: [AnyHashable: Any]) -> Bool {
+    return NSDictionary(dictionary: left).isEqual(to: right)
+}
+
+enum RulesDecodingError: Error {
+    case decodingError(DecodingError)
+    case unknown
+}
+
+typealias RulesDecodingResult<T: Decodable> = Rules.Result<RulesDecodingError, T>
+
+func decoded<T: Decodable>(from data: Data) -> RulesDecodingResult<T> {
+    do {
+        let decoder = JSONDecoder()
+        return .success(try decoder.decode(T.self, from: data))
+    } catch let decodingError as DecodingError {
+        return .failed(.decodingError(decodingError))
+    } catch {
+        return .failed(.unknown)
     }
 }
 

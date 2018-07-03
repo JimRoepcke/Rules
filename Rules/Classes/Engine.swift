@@ -64,14 +64,13 @@ public class Engine {
         } else {
             let candidateRule = candidateRules[0].rule
             return candidateRule
-                .fire(in: context)
+                .fire(in: context, match: candidateRules[0].match)
                 .bimap(Context.AnswerError.firingFailed, Rules.id)
         }
     }
 }
 
 public typealias LookupResult = Rules.Result<Context.AnswerError, Context.Answer>
-
 
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.

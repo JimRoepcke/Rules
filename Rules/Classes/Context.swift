@@ -9,7 +9,6 @@ public class Context {
     public typealias RHSKey = String
     public typealias RHSValue = String
 
-
     public enum Answer: Equatable {
         case bool(Bool, match: Set<RHSKey>)
         case double(Double, match: Set<RHSKey>)

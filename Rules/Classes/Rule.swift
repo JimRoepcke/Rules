@@ -14,16 +14,91 @@ public struct Rule {
 
     public typealias FiringResult = Rules.Result<FiringError, Context.Answer>
 
-    public typealias Assignment = (Rule, Context) -> FiringResult
+    /// TODO: this is going to change to a `String` which the `Engine` uses to look up
+    /// an `Assignment` function by name. This will make it easy to make the
+    /// `Rule` type `Codable` for conversion to/from JSON.
+    public typealias Assignment = (Rule, Context, Predicate.Match) -> FiringResult
+
+    public enum Value {
+        case bool(Bool)
+        case double(Double)
+        case int(Int)
+        case string(String)
+    }
 
     public let priority: Int
     public let predicate: Predicate
-    public let key: Context.RHSKey
-    public let value: Context.RHSValue
-    public let assignment: Assignment
+    public let key: Context.RHSKey // which is `String`
+    public let value: Context.RHSValue // currently `String`, will change to `Value`
 
-    func fire(in context: Context) -> FiringResult {
-        return assignment(self, context)
+    /// the standard/default assignment will just return the `value` as is.
+    public let assignment: Assignment // will change to `String`
+
+    /// This method is going to move into `Context` when `assignment`
+    /// is changed from a function to a `String`
+    func fire(in context: Context, match: Predicate.Match) -> FiringResult {
+        return assignment(self, context, match)
+    }
+}
+
+public enum RuleParsingError: Error, Equatable {
+    case prioritySeparatorNotFound
+    case invalidPriority
+    case implicationOperatorNotFound
+    case invalidPredicate(ConversionError)
+    case equalOperatorNotFound
+}
+
+typealias RuleParsingResult = Rules.Result<RuleParsingError, Rule>
+
+/// This parser is no
+func parse(humanRule: String) -> RuleParsingResult {
+    // right now this parses:
+    //   priority: predicate => key = value
+    // eventually it will support:
+    //   priority: predicate => key = value [assignment]
+    // and value will not be assumed to be a `String`, it will be support
+    // all the types in `Rule.Value`, which are `String`, `Int`, `Double`, and
+    // `Bool`.
+    let trim = Rules.flip(String.trimmingCharacters)(.whitespacesAndNewlines)
+    let parts1 = humanRule.split(separator: ":", maxSplits: 1).map(String.init).map(trim)
+    guard parts1.count == 2 else {
+        return .failed(.prioritySeparatorNotFound)
+    }
+    guard let priority = Int(trim(parts1[0])) else {
+        return .failed(.invalidPriority)
+    }
+    let afterPriority = parts1[1]
+    guard let implicationOperatorRange = afterPriority.range(of: "=>") else {
+        return .failed(.implicationOperatorNotFound)
+    }
+    let predicateFormat = afterPriority[afterPriority.startIndex..<implicationOperatorRange.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let afterImplicationOperator = afterPriority[implicationOperatorRange.upperBound..<afterPriority.endIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+
+    let rhsParts = afterImplicationOperator.split(separator: "=", maxSplits: 1).map(String.init).map(trim)
+    guard rhsParts.count == 2 else {
+        return .failed(.equalOperatorNotFound)
+    }
+    let key = rhsParts[0]
+
+    // for now, leave the assignment out of the textual rule format
+    let valueAndAssignment = rhsParts[1]
+    let value = valueAndAssignment
+    let predicateResult = convert(ns: parse(format: predicateFormat))
+    switch predicateResult {
+    case .failed(let error):
+        return .failed(.invalidPredicate(error))
+    case .success(let predicate):
+        return .success(
+            Rule(
+                priority: priority,
+                predicate: predicate,
+                key: key,
+                value: value,
+                assignment: { rule, _, match in .success(.string(rule.value, match: match)) }
+            )
+        )
     }
 }
 

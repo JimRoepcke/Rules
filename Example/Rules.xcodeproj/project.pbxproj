@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		380088CD20EAF2EB006AA5E2 /* PredicateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 380088CC20EAF2EB006AA5E2 /* PredicateTests.swift */; };
+		380088CF20EBD1EF006AA5E2 /* RuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 380088CE20EBD1EF006AA5E2 /* RuleTests.swift */; };
 		607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD51AFB9204008FA782 /* AppDelegate.swift */; };
 		607FACD81AFB9204008FA782 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD71AFB9204008FA782 /* ViewController.swift */; };
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
@@ -31,6 +32,7 @@
 /* Begin PBXFileReference section */
 		003F295B1317ED2C6AF9F1D9 /* Pods_Rules_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Rules_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		380088CC20EAF2EB006AA5E2 /* PredicateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PredicateTests.swift; sourceTree = "<group>"; };
+		380088CE20EBD1EF006AA5E2 /* RuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleTests.swift; sourceTree = "<group>"; };
 		39ACB4D10B7FF040EB330BE5 /* Pods-Rules_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Rules_Example.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Rules_Example/Pods-Rules_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		4618D76955E7F156F678EF7A /* Pods_Rules_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Rules_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		537D77E2EF80A044A641133A /* Rules.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = Rules.podspec; path = ../Rules.podspec; sourceTree = "<group>"; };
@@ -119,6 +121,7 @@
 			children = (
 				607FACEB1AFB9204008FA782 /* ContextTests.swift */,
 				380088CC20EAF2EB006AA5E2 /* PredicateTests.swift */,
+				380088CE20EBD1EF006AA5E2 /* RuleTests.swift */,
 				607FACE91AFB9204008FA782 /* Supporting Files */,
 			);
 			path = Tests;
@@ -355,6 +358,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				380088CF20EBD1EF006AA5E2 /* RuleTests.swift in Sources */,
 				607FACEC1AFB9204008FA782 /* ContextTests.swift in Sources */,
 				380088CD20EAF2EB006AA5E2 /* PredicateTests.swift in Sources */,
 			);

@@ -23,7 +23,7 @@ public enum Predicate: Equatable {
         case predicate(Predicate)
     }
 
-    public enum ComparisonOperator: Equatable {
+    public enum ComparisonOperator: String, Equatable, Codable {
         case isEqualTo
         case isNotEqualTo
         case isLessThan
@@ -32,7 +32,7 @@ public enum Predicate: Equatable {
         case isGreaterThanOrEqualTo
     }
 
-    public struct Key: Equatable {
+    public struct Key: Equatable, Codable {
         public let value: Context.RHSKey
     }
 
@@ -86,6 +86,138 @@ public enum Predicate: Equatable {
         }
     }
 
+}
+
+extension Predicate.Expression: Codable {
+    enum CodingKeys: String, CodingKey {
+        case key
+        case value
+        case predicate
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if container.contains(.key) {
+            self = .key(.init(value: try container.decode(String.self, forKey: .key)))
+        } else if container.contains(.value) {
+            self = .value(try container.decode(Predicate.Value.self, forKey: .value))
+        } else if container.contains(.predicate) {
+            self = .predicate(try container.decode(Predicate.self, forKey: .predicate))
+        } else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "no key, value or predicate key"))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .key(let key):
+            try container.encode(key.value, forKey: .key)
+        case .value(let value):
+            try container.encode(value, forKey: .value)
+        case .predicate(let predicate):
+            try container.encode(predicate, forKey: .predicate)
+        }
+    }
+}
+
+extension Predicate.Value: Codable {
+    enum CodingKeys: String, CodingKey {
+        case int
+        case double
+        case string
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if container.contains(.int) {
+            self = .int(try container.decode(Int.self, forKey: .int))
+        } else if container.contains(.double) {
+            self = .double(try container.decode(Double.self, forKey: .double))
+        } else if container.contains(.string) {
+            self = .string(try container.decode(String.self, forKey: .string))
+        } else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "no int, double or string key"))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .int(let value):
+            try container.encode(value, forKey: .int)
+        case .double(let value):
+            try container.encode(value, forKey: .double)
+        case .string(let value):
+            try container.encode(value, forKey: .string)
+        }
+    }
+}
+
+extension Predicate: Codable {
+    enum PredicateType: String, Equatable, Codable {
+        case `false`
+        case `true`
+        case not
+        case and
+        case or
+        case comparison
+    }
+    enum CodingKeys: String, CodingKey {
+        case type
+        case operand
+        case operands
+        case lhs
+        case op
+        case rhs
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(PredicateType.self, forKey: .type)
+        switch type {
+        case .false:
+            self = .false
+        case .true:
+            self = .true
+        case .not:
+            let inverting = try container.decode(Predicate.self, forKey: .operand)
+            self = .not(inverting)
+        case .and:
+            let operands = try container.decode([Predicate].self, forKey: .operands)
+            self = .and(operands)
+        case .or:
+            let operands = try container.decode([Predicate].self, forKey: .operands)
+            self = .or(operands)
+        case .comparison:
+            let lhs = try container.decode(Expression.self, forKey: .lhs)
+            let op = try container.decode(Predicate.ComparisonOperator.self, forKey: .op)
+            let rhs = try container.decode(Expression.self, forKey: .lhs)
+            self = .comparison(lhs: lhs, op: op, rhs: rhs)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .false:
+            try container.encode(PredicateType.false, forKey: .type)
+        case .true:
+            try container.encode(PredicateType.true, forKey: .type)
+        case .not(let predicate):
+            try container.encode(PredicateType.not, forKey: .type)
+            try container.encode(predicate, forKey: .operand)
+        case .and(let predicates):
+            try container.encode(PredicateType.and, forKey: .type)
+            try container.encode(predicates, forKey: .operands)
+        case .or(let predicates):
+            try container.encode(PredicateType.or, forKey: .type)
+            try container.encode(predicates, forKey: .operands)
+        case .comparison(let lhs, let op, let rhs):
+            try container.encode(PredicateType.comparison, forKey: .type)
+            try container.encode(lhs, forKey: .lhs)
+            try container.encode(op, forKey: .op)
+            try container.encode(rhs, forKey: .rhs)
+        }
+    }
 }
 
 extension Predicate.ComparisonOperator {
@@ -315,6 +447,157 @@ func evaluate(predicate: Predicate, in context: Context) -> Predicate.Evaluation
 
     case .comparison(.value(let lhs), let op, .value(let rhs)):
         return compareValueToValue(lhs: lhs, op: op, rhs: rhs, match: [])
+    }
+}
+
+public enum ConversionError: Error, Equatable {
+    case compoundHasNoSubpredicates
+    case inputWasNotRecognized
+    case unsupportedOperator
+    case unsupportedExpression
+    case unsupportedConstantValue
+}
+
+public typealias ExpressionConversionResult = Rules.Result<ConversionError, Predicate.Expression>
+public typealias PredicateConversionResult = Rules.Result<ConversionError, Predicate>
+
+import Foundation
+
+/// Convert a predicate `String` into an `NSPredicate`.
+public func parse(format rawFormat: String) -> NSPredicate {
+    let format = cleaned(format: rawFormat)
+    // TODO: catch NSException if this fails
+    return NSPredicate(format: format, argumentArray: nil)
+}
+
+/// NSPredicate cannot parse "true" or "false", it must be "TRUEPREDICATE" or
+/// "FALSEPREDICATE". It can parse true and false inside comparisons like
+/// "key == true" though. So, this deals with that issue before handing the
+/// predicate format string to the `NSPredicate` initializer.
+func cleaned(format rawFormat: String) -> String {
+    switch rawFormat.trimmingCharacters(in: .whitespacesAndNewlines) {
+    case let trimmed where trimmed.lowercased() == "true": return "TRUEPREDICATE"
+    case let trimmed where trimmed.lowercased() == "false": return "FALSEPREDICATE"
+    case let result: return result
+    }
+}
+
+/// The textual rule file format will have the predicate parsed using
+/// `NSPredicate`'s predicate parser. That is then converted to `Predicate`.
+/// This frees us from having to write a predicate parser of our own.
+public func convert(ns: NSPredicate) -> PredicateConversionResult {
+    switch ns {
+    case let compound as NSCompoundPredicate:
+        guard let subpredicates = compound.subpredicates as? [NSPredicate], !subpredicates.isEmpty else {
+            return .failed(.compoundHasNoSubpredicates)
+        }
+        switch compound.compoundPredicateType {
+        case .not:
+            return convert(ns: subpredicates[0]).bimap(Rules.id, Predicate.not)
+        case .and:
+            let subpredicateConversions = subpredicates.map(convert(ns:))
+            if let failed = subpredicateConversions.first(where: { $0.value == nil }) {
+                return failed
+            }
+            let convertedSubpredicates = subpredicateConversions.compactMap { $0.value }
+            return .success(.and(convertedSubpredicates))
+        case .or:
+            let subpredicateConversions = subpredicates.map(convert(ns:))
+            if let failed = subpredicateConversions.first(where: { $0.value == nil }) {
+                return failed
+            }
+            let convertedSubpredicates = subpredicateConversions.compactMap { $0.value }
+            return .success(.or(convertedSubpredicates))
+        }
+    case let comparison as NSComparisonPredicate:
+        guard let op = convert(operatorType: comparison.predicateOperatorType) else {
+            return .failed(.unsupportedOperator)
+        }
+        let lhsResult = convert(expr: comparison.leftExpression)
+        switch lhsResult {
+        case .failed(let error): return .failed(error)
+        case .success(let lhs):
+            let rhsResult = convert(expr: comparison.rightExpression)
+            switch rhsResult {
+            case .failed(let error): return .failed(error)
+            case .success(let rhs):
+                return .success(.comparison(lhs: lhs, op: op, rhs: rhs))
+            }
+        }
+    case let unknown where unknown.predicateFormat == "TRUEPREDICATE":
+        return .success(.true)
+    case let unknown where unknown.predicateFormat == "FALSEPREDICATE":
+        return .success(.false)
+    default:
+        return .failed(.inputWasNotRecognized)
+    }
+}
+
+public func convert(operatorType: NSComparisonPredicate.Operator) -> Predicate.ComparisonOperator? {
+    switch operatorType {
+    case .lessThan: return .isLessThan
+    case .lessThanOrEqualTo: return .isLessThanOrEqualTo
+    case .greaterThan: return .isGreaterThan
+    case .greaterThanOrEqualTo: return .isGreaterThanOrEqualTo
+    case .equalTo: return .isEqualTo
+    case .notEqualTo: return .isNotEqualTo
+    case .matches,
+         .like,
+         .beginsWith,
+         .endsWith,
+         .in,
+         .customSelector,
+         .contains,
+         .between: return nil // unsupported
+    }
+}
+
+public func convert(expr: NSExpression) -> ExpressionConversionResult {
+    switch expr.expressionType {
+    case .constantValue:
+        switch expr.constantValue {
+        case let s as String:
+            return .success(.value(.string(s)))
+        case let num as NSNumber:
+            let type: CFNumberType = CFNumberGetType(num)
+            switch type {
+            case .sInt8Type,
+                 .sInt16Type,
+                 .sInt32Type,
+                 .sInt64Type,
+                 .nsIntegerType,
+                 .shortType,
+                 .intType,
+                 .longType,
+                 .longLongType,
+                 .cfIndexType:
+                return .success(.value(.int(num.intValue)))
+            case .float32Type,
+                 .float64Type,
+                 .floatType,
+                 .doubleType,
+                 .cgFloatType:
+                return .success(.value(.double(num.doubleValue)))
+            case .charType:
+                return .success(.predicate(num.boolValue ? .true : .false))
+            }
+        default:
+            return .failed(.unsupportedConstantValue)
+        }
+    case .keyPath:
+        return .success(.key(.init(value: expr.keyPath)))
+    case .evaluatedObject,
+         .variable,
+         .function,
+         .unionSet,
+         .intersectSet,
+         .minusSet,
+         .subquery,
+         .aggregate,
+         .anyKey,
+         .block,
+         .conditional:
+        return .failed(.unsupportedExpression)
     }
 }
 
