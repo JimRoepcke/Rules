@@ -9,8 +9,8 @@ import Nimble
 
 @testable import Rules
 
-extension Lookup.Error {
-    static let mock: Lookup.Error = .noRuleFound(key: "key")
+extension Context.AnswerError {
+    static let mock: Context.AnswerError = .noRuleFound(key: "key")
 }
 
 extension Engine {
@@ -26,21 +26,20 @@ extension Context {
 class ContextTests: QuickSpec {
     override func spec() {
 
-        print("RUNNING")
         typealias Fns = ContextFunctions
 
         describe("ContextFunctions") {
 
             describe("lookup") {
                 var failed = false
-                let onF: (Lookup.Error) -> Context.AnswerError = {
-                    failed = true
-                    return .lookupFailed($0)
-                }
                 var succeeded = false
-                let onS: (Lookup) -> Rule.Answer = {
+                let onF: (Context.AnswerError) -> Context.AnswerError = {
+                    failed = true
+                    return $0
+                }
+                let onS: (Context.Answer) -> Context.Answer = {
                     succeeded = true
-                    return $0.answer
+                    return $0
                 }
 
                 let result = Fns.lookup(
@@ -49,6 +48,8 @@ class ContextTests: QuickSpec {
                     onFailure: onF,
                     onSuccess: onS
                 )
+
+                expect(result) == LookupResult.failed(.noRuleFound(key: "missing"))
 
                 expect(failed).to(beTrue())
                 expect(succeeded).to(beFalse())

@@ -63,31 +63,15 @@ public class Engine {
             return .failed(.ambiguous(key: key))
         } else {
             let candidateRule = candidateRules[0].rule
-            switch candidateRule.fire(in: context) {
-            case let .failed(error):
-                return .failed(.firingFailed(error))
-            case let .success(answer):
-                let candidateMatch = candidateRules[0].match
-                return .success(.init(answer: answer, match: candidateMatch))
-            }
+            return candidateRule
+                .fire(in: context)
+                .bimap(Context.AnswerError.firingFailed, Rules.id)
         }
     }
 }
 
-public struct Lookup: Equatable {
+public typealias LookupResult = Rules.Result<Context.AnswerError, Context.Answer>
 
-    public enum Error: Swift.Error, Equatable {
-        case noRuleFound(key: Context.RHSKey)
-        case ambiguous(key: Context.RHSKey)
-        case firingFailed(Rule.FiringError)
-    }
-
-    public let answer: Rule.Answer
-    public let match: Predicate.Match
-
-}
-
-public typealias LookupResult = Rules.Result<Lookup.Error, Lookup>
 
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.

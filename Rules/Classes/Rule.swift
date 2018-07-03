@@ -4,25 +4,15 @@
 //  License: MIT, included below
 //
 
-public enum AnyAnswer: Equatable {
-    case bool(Bool)
-    case int(Int)
-    case float(Float)
-    case double(Double)
-    case string(String)
-}
-
 /// - note: a `Rule` is invalid if its (LHS) predicate looks up the (RHS) `key`
 public struct Rule {
-
-    public typealias Answer = AnyAnswer
 
     public enum FiringError: Swift.Error, Equatable {
         case failed
         case invalidRHSValue(String)
     }
 
-    public typealias FiringResult = Rules.Result<FiringError, Answer>
+    public typealias FiringResult = Rules.Result<FiringError, Context.Answer>
 
     public typealias Assignment = (Rule, Context) -> FiringResult
 

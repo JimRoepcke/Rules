@@ -9,16 +9,33 @@ public class Context {
     public typealias RHSKey = String
     public typealias RHSValue = String
 
+
+    public enum Answer: Equatable {
+        case bool(Bool, match: Set<RHSKey>)
+        case double(Double, match: Set<RHSKey>)
+        case int(Int, match: Set<RHSKey>)
+        case string(String, match: Set<RHSKey>)
+
+        var match: Set<RHSKey> {
+            switch self {
+            case .bool(_, let it): return it
+            case .double(_, let it): return it
+            case .int(_, let it): return it
+            case .string(_, let it): return it
+            }
+        }
+    }
+
     public let engine: Engine
 
-    var stored: [RHSKey: Rule.Answer]
-    var cached: [RHSKey: Rule.Answer]
+    var stored: [RHSKey: Answer]
+    var cached: [RHSKey: Answer]
 
     /// this maps a `RHSKey` to the `RHSKey`s that depended on the value of that `RHSKey` to produce their value
     /// ergo, when the value of a `RHSKey` changes in `stored`, all pairs in `cached` keyed by members of the associated `[RHSKey]` value
     /// of this dictionary must be invalidated.
     /// That is, the key:value relationship here is depended-on:dependent-keys
-    var matched: [RHSKey: [RHSKey]]
+    var matched: [RHSKey: Set<RHSKey>]
 
     public init(engine: Engine) {
         self.engine = engine
@@ -27,7 +44,7 @@ public class Context {
         self.matched = [:]
     }
 
-    public func store(answer: Rule.Answer, forKey key: RHSKey) {
+    public func store(answer: Answer, forKey key: RHSKey) {
         stored[key] = answer
         for cachedKeyDependentOnKey in (matched[key] ?? []) {
             cached.removeValue(forKey: cachedKeyDependentOnKey)
@@ -35,20 +52,21 @@ public class Context {
         matched.removeValue(forKey: key)
     }
 
-    func cache(lookup: Lookup, forKey key: RHSKey) -> Rule.Answer {
-        let answer = lookup.answer
+    func cache(answer: Answer, forKey key: RHSKey) -> Answer {
         cached[key] = answer
-        for dependedOnKey in lookup.match {
-            matched[dependedOnKey, default: []].append(key)
+        for dependedOnKey in answer.match {
+            matched[dependedOnKey, default: []].insert(key)
         }
         return answer
     }
 
     public enum AnswerError: Swift.Error, Equatable {
-        case lookupFailed(Lookup.Error)
+        case noRuleFound(key: RHSKey)
+        case ambiguous(key: RHSKey)
+        case firingFailed(Rule.FiringError)
     }
 
-    public subscript(key: RHSKey) -> Rules.Result<AnswerError, Rule.Answer> {
+    public subscript(key: RHSKey) -> LookupResult {
         get {
             if let value = stored[key] {
                 return .success(value)
@@ -59,7 +77,7 @@ public class Context {
             return Fns.lookup(
                 key: key,
                 in: self,
-                onFailure: Context.AnswerError.lookupFailed,
+                onFailure: Rules.id,
                 onSuccess: Fns.cache(key: key, in: self)
             )
         }
@@ -75,17 +93,17 @@ enum ContextFunctions {
     static func cache(
         key: Context.RHSKey,
         in context: Context
-        ) -> (Lookup) -> Rule.Answer
+        ) -> (Context.Answer) -> Context.Answer
     {
-        return { context.cache(lookup: $0, forKey: key) }
+        return { context.cache(answer: $0, forKey: key) }
     }
 
     static func lookup(
         key: Context.RHSKey,
         in context: Context,
-        onFailure: (Lookup.Error) -> Context.AnswerError,
-        onSuccess: (Lookup) -> Rule.Answer
-        ) -> Rules.Result<Context.AnswerError, Rule.Answer> {
+        onFailure: (Context.AnswerError) -> Context.AnswerError,
+        onSuccess: (Context.Answer) -> Context.Answer
+        ) -> LookupResult {
         return context
             .engine
             .lookup(key: key, in: context)

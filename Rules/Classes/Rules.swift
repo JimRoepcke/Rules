@@ -9,6 +9,7 @@
 public enum Rules {
 
     public enum Result<E, V>: Equatable where E: Equatable, V: Equatable {
+
         case failed(E)
         case success(V)
 
@@ -23,6 +24,8 @@ public enum Rules {
             }
         }
     }
+
+    static func id<A>(_ a: A) -> A { return a }
 
     static func flip<A, B, C>(
         _ f: @escaping (A) -> (B) -> C
