@@ -4,7 +4,7 @@
 //  License: MIT, included below
 //
 
-public enum Predicate {
+public enum Predicate: Equatable {
 
     public typealias EvaluationResult = Rules.Result<Predicate.EvaluationError, Predicate.Evaluation>
 
@@ -17,13 +17,13 @@ public enum Predicate {
     indirect case or([Predicate])
     indirect case comparison(lhs: Expression, op: ComparisonOperator, rhs: Expression)
 
-    public enum Expression {
+    public enum Expression: Equatable {
         case key(Key)
         case value(Value)
         case predicate(Predicate)
     }
 
-    public enum ComparisonOperator {
+    public enum ComparisonOperator: Equatable {
         case isEqualTo
         case isNotEqualTo
         case isLessThan
@@ -32,12 +32,12 @@ public enum Predicate {
         case isGreaterThanOrEqualTo
     }
 
-    public struct Key {
+    public struct Key: Equatable {
         public let value: Context.RHSKey
     }
 
     // does not include `.bool` because `.true` and `.false` are directly in `Predicate`
-    public enum Value {
+    public enum Value: Equatable {
         case int(Int)
         case double(Double)
         case string(String)
