@@ -51,7 +51,7 @@ public enum RuleParsingError: Error, Equatable {
 
 typealias RuleParsingResult = Rules.Result<RuleParsingError, Rule>
 
-/// This parser is no
+/// This parser is not completely finished, it's not quite robust enough
 func parse(humanRule: String) -> RuleParsingResult {
     // right now this parses:
     //   priority: predicate => key = value
