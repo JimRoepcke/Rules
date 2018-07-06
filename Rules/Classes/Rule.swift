@@ -102,6 +102,11 @@ public enum RuleParsingError: Error, Equatable {
 
 typealias RuleParsingResult = Rules.Result<RuleParsingError, Rule>
 
+// MARK: - Parsing textual `Rule`s
+
+// The code from here down will not be needed on other platforms like Android
+// unless you cannot use this code to convert your textual rule files to JSON.
+
 /// This parser is not completely finished, it's not quite robust enough
 func parse(humanRule: String) -> RuleParsingResult {
     // right now this parses:
