@@ -88,6 +88,8 @@ public enum Predicate: Equatable {
 
 }
 
+// MARK: - Predicate Serialization using Codable
+
 extension Predicate.Expression: Codable {
     enum CodingKeys: String, CodingKey {
         case key
@@ -220,6 +222,8 @@ extension Predicate: Codable {
     }
 }
 
+// MARK: - Predicate Evaluation
+
 extension Predicate.ComparisonOperator {
 
     var swapped: Predicate.ComparisonOperator {
@@ -265,6 +269,11 @@ extension Context.Answer {
     }
 }
 
+/// Evaluates the sub-`Predicate`s of compound `Predicate`s of types: `.and`, `.or`.
+/// - parameters:
+///   - predicates: the sub-`Predicate`s associated with the compound `Predicate` being evaluated.
+///   - context: the `Context` to look up `key`s from.
+///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
 func evaluateCompound(predicates: [Predicate], in context: Context, identity: Bool) -> Predicate.EvaluationResult {
     var keys: Set<Context.RHSKey> = []
     for predicate in predicates {
@@ -460,6 +469,11 @@ public enum ConversionError: Error, Equatable {
 
 public typealias ExpressionConversionResult = Rules.Result<ConversionError, Predicate.Expression>
 public typealias PredicateConversionResult = Rules.Result<ConversionError, Predicate>
+
+// MARK: - Parsing textually-formatted predicates into `Predicate` via `NSPredicate`.
+
+// The code from here down will not be needed on other platforms like Android
+// unless you cannot use this code to convert your textual rule files to JSON.
 
 import Foundation
 
