@@ -77,9 +77,9 @@ public struct Rule {
         case string(String)
     }
 
-    /// The `Context` provides this RHS `value` as the result of a lookup of
-    /// this `Rule`'s RHS `key` iff this `Rule` has the highest priority amongst
-    /// all `Rule`s currently matching the state of the `Context`.
+    /// The `Context` provides this RHS `value` as the result of a question for
+    /// this `Rule`'s RHS `key` iff this `Rule` has the highest `priority`
+    /// amongst all `Rule`s currently matching the state of the `Context`.
     public let value: Context.RHSValue // currently `String`, will change to `Value`
 
     /// the standard/default assignment will just return the `value` as is.

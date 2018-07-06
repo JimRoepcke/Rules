@@ -52,7 +52,7 @@ public class Engine {
     }
 
     /// only called when `context` has no stored or cached value for this key
-    public func lookup(key: Context.RHSKey, in context: Context) -> LookupResult {
+    public func question(key: Context.RHSKey, in context: Context) -> QuestionWithMatchResult {
         // find candidate rules
         let candidateRules = candidates(for: key, in: context)
         if candidateRules.isEmpty {
@@ -70,7 +70,7 @@ public class Engine {
     }
 }
 
-public typealias LookupResult = Rules.Result<Context.AnswerError, Context.Answer>
+public typealias QuestionWithMatchResult = Rules.Result<Context.AnswerError, Context.Answer>
 
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.

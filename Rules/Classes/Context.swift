@@ -65,7 +65,7 @@ public class Context {
         case firingFailed(Rule.FiringError)
     }
 
-    public subscript(key: RHSKey) -> LookupResult {
+    public subscript(key: RHSKey) -> QuestionWithMatchResult {
         get {
             if let value = stored[key] {
                 return .success(value)
@@ -73,7 +73,7 @@ public class Context {
             if let value = cached[key] {
                 return .success(value)
             }
-            return Fns.lookup(
+            return Fns.question(
                 key: key,
                 in: self,
                 onFailure: Rules.id,
@@ -97,15 +97,15 @@ enum ContextFunctions {
         return { context.cache(answer: $0, forKey: key) }
     }
 
-    static func lookup(
+    static func question(
         key: Context.RHSKey,
         in context: Context,
         onFailure: (Context.AnswerError) -> Context.AnswerError,
         onSuccess: (Context.Answer) -> Context.Answer
-        ) -> LookupResult {
+        ) -> QuestionWithMatchResult {
         return context
             .engine
-            .lookup(key: key, in: context)
+            .question(key: key, in: context)
             .bimap(onFailure, onSuccess)
     }
 }
