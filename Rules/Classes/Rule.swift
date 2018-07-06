@@ -19,6 +19,20 @@ public struct Rule {
     /// `Rule` type `Codable` for conversion to/from JSON.
     public typealias Assignment = (Rule, Context, Predicate.Match) -> FiringResult
 
+    /// Higher priority `Rule`s have their `predicate` checked before `Rules`
+    /// with lower `priority`.
+    /// The RHS of a higher `priority` `Rule` that matches the current state of
+    /// the `Context` overrides lower-`priority` rules.
+    public let priority: Int
+
+    /// The LHS condition of the `Rule`. A `Rule`'s RHS only applies if its
+    /// `predicate` matches the current state of the `Context`.
+    public let predicate: Predicate
+
+    /// The RHS `key` is the identifier which the `RHS` `value` is associated with.
+    public let key: Context.RHSKey // which is `String`
+
+    /// Enumerates the possible return `value`s associated with a `Rule`.
     public enum Value {
         case bool(Bool)
         case double(Double)
@@ -26,9 +40,9 @@ public struct Rule {
         case string(String)
     }
 
-    public let priority: Int
-    public let predicate: Predicate
-    public let key: Context.RHSKey // which is `String`
+    /// The `Context` provides this RHS `value` as the result of a lookup of
+    /// this `Rule`'s RHS `key` iff this `Rule` has the highest priority amongst
+    /// all `Rule`s currently matching the state of the `Context`.
     public let value: Context.RHSValue // currently `String`, will change to `Value`
 
     /// the standard/default assignment will just return the `value` as is.
