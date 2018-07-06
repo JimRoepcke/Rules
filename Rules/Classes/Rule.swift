@@ -4,12 +4,45 @@
 //  License: MIT, included below
 //
 
-/// - note: a `Rule` is invalid if its (LHS) predicate looks up the (RHS) `key`
+/// A `Rule` describes a logical implication, which is commonly denoted as
+/// `p -> q` in mathematics, where `->` means "implies".
+///
+/// In this system, it is described as `LHS => RHS`, where `=>` is read as
+/// "then". The whole rule is read colloquially as:
+///
+/// _"If the LHS is true, then the RHS declares this fact."_
+///
+/// The RHS (or right hand side) of a `Rule` declares a fact. The fact is a
+/// `value` for a `key`. An `Engine` is used to get the `value` of a `key`.
+///
+/// The LHS (or left hand side) of a `Rule` is comprised of two parts:
+/// - its `priority` ranks the importance of the `Rule` relative to others.
+/// - its `predicate` can be evaluated to a `Bool`, given a `Context`.
+///
+/// The RHS (or right hand side) of a `Rule` is comprised of three parts:
+/// - a `key`, which is the identifier for the
+///
+/// Given a set of `Rule`s with the same RHS `key`, the `Rule` that "wins" or
+/// "takes effect" or "applies" is the one with the highest `priority` amongst
+/// the subset of `Rules` whose `predicate` evaluates to `true` in a given
+/// `Context`.
+///
+/// When a rule takes effect, the fact it declared is cached in the `Context`.
+/// The `Context` knows which other values were considered 
+///
+/// - note: a `Rule` is invalid if its `predicate` contains the RHS `key`.
 public struct Rule {
 
+    /// If an Assignment cannot provide a `Context.Answer`, it returns one
+    /// of these error cases.
     public enum FiringError: Swift.Error, Equatable {
-        case failed
-        case invalidRHSValue(String)
+        /// An unexpected error occurred.
+        /// - parameter debugDescription: use for debug logging.
+        case failed(debugDescription: String)
+        /// The format of the RHS value was somehow incompatable with the `assignment`.
+        /// - parameter debugDescription: use for debug logging.
+        /// - parameter value: The RHS `value` of the `Rule` the `assignment` could not process.
+        case invalidRHSValue(debugDescription: String, value: Predicate.Value)
     }
 
     public typealias FiringResult = Rules.Result<FiringError, Context.Answer>
@@ -27,13 +60,17 @@ public struct Rule {
 
     /// The LHS condition of the `Rule`. A `Rule`'s RHS only applies if its
     /// `predicate` matches the current state of the `Context`.
+    ///
+    /// - note: The predicate can include comparison against other keys whose
+    ///         values are not stored in the `Context`. The value of those keys
+    ///         will be looked up using the `Context` recursively.
     public let predicate: Predicate
 
     /// The RHS `key` is the identifier which the `RHS` `value` is associated with.
     public let key: Context.RHSKey // which is `String`
 
     /// Enumerates the possible return `value`s associated with a `Rule`.
-    public enum Value {
+    public enum Value: Equatable {
         case bool(Bool)
         case double(Double)
         case int(Int)
