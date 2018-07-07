@@ -28,8 +28,11 @@
 /// amongst the subset of `Rules` whose `predicate` evaluates to `true` in a
 /// given `Facts`.
 ///
-/// When a rule takes effect, the fact it declared is cached in the `Facts`.
-/// The `Facts` knows which other values were considered 
+/// When a rule takes effect, the inferred fact it declared is remembered in the
+/// `Facts`. The `Facts` knows which other questions were needed to determine
+/// the answer to the inferred fact and uses that information to forget inferred
+/// answers when they're no longer valid because the answers to those other
+/// questions changed.
 ///
 /// - note: a `Rule` is invalid if its `predicate` contains its `question`.
 public struct Rule {
@@ -63,7 +66,7 @@ public struct Rule {
     /// `predicate` matches the current state of the `Facts`.
     ///
     /// - note: The predicate can include comparison against other questions
-    ///         whose values are not stored in the `Facts`. The answer to
+    ///         whose values are not known in the `Facts`. The answer to
     ///         those questions will be determined recursively.
     public let predicate: Predicate
 

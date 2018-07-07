@@ -51,7 +51,7 @@ public class Brain {
         return results
     }
 
-    /// only called when `context` has no stored or cached answer for this question
+    /// only called when `context` has no known or inferred answer for this question
     public func ask(question: Facts.Question, in context: Facts) -> AnswerWithDependenciesResult {
         // find candidate rules
         let candidateRules = candidates(for: question, in: context)

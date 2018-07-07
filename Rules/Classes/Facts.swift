@@ -7,7 +7,7 @@
 /// A mutable collection of answers to questions, both known and inferred.
 ///
 /// **Known facts** are provided directly by the client of the `Facts`. Use
-/// the `store(answer:forQuestion:)` method to create a known fact.
+/// the `know(answer:forQuestion:)` method to create a known fact.
 ///
 /// **Inferred facts** are provided by an `Brain` configured with `Rule`s.
 /// Use the `Brain.add(rule:)` method to configure the `Brain` provided
@@ -19,7 +19,7 @@
 /// - `.failed(Facts.AnswerError)`.
 ///
 /// The `Facts` remembers (caches) all inferred answers it learns about via
-/// asked questions. It knows which other questions, stored and inferred, that
+/// asked questions. It knows which other questions, known and inferred, that
 /// were considered when producing the inferred answer, and automatically
 /// invalidates its memory (cache) when dependencies change.
 public class Facts {
@@ -95,12 +95,12 @@ public class Facts {
 
     public let engine: Brain
 
-    var stored: [Question: AnswerWithDependencies]
-    var cached: [Question: AnswerWithDependencies]
+    var known: [Question: AnswerWithDependencies]
+    var inferred: [Question: AnswerWithDependencies]
 
     /// this maps a `Question` to the `Question`s that depended on the answer of
     /// that `Question` to produce their answer. Ergo, when the answer of a
-    /// `Question` changes in `stored`, all pairs in `cached` keyed by members
+    /// `Question` changes in `known`, all pairs in `inferred` keyed by members
     /// of the associated `[Question]` value of this dictionary must be
     /// invalidated. That is, the question:answer relationship here is
     /// depended-on:dependent-keys.
@@ -108,21 +108,21 @@ public class Facts {
 
     public init(engine: Brain) {
         self.engine = engine
-        self.stored = [:]
-        self.cached = [:]
+        self.known = [:]
+        self.inferred = [:]
         self.dependencies = [:]
     }
 
-    public func store(answer: Answer, forQuestion question: Question) {
-        stored[question] = answer.asAnswerWithDependencies()
-        for cachedQuestionDependentOnAnsweredQuestion in (dependencies[question] ?? []) {
-            cached.removeValue(forKey: cachedQuestionDependentOnAnsweredQuestion)
+    public func know(answer: Answer, forQuestion question: Question) {
+        known[question] = answer.asAnswerWithDependencies()
+        for inferredQuestionDependentOnAnsweredQuestion in (dependencies[question] ?? []) {
+            inferred.removeValue(forKey: inferredQuestionDependentOnAnsweredQuestion)
         }
         dependencies.removeValue(forKey: question)
     }
 
     func cache(answer: AnswerWithDependencies, forQuestion question: Question) -> AnswerWithDependencies {
-        cached[question] = answer
+        inferred[question] = answer
         for dependedOnQuestion in answer.dependencies {
             dependencies[dependedOnQuestion, default: []].insert(question)
         }
@@ -141,10 +141,10 @@ public class Facts {
 
     public subscript(question: Question) -> AnswerWithDependenciesResult {
         get {
-            if let answer = stored[question] {
+            if let answer = known[question] {
                 return .success(answer)
             }
-            if let answer = cached[question] {
+            if let answer = inferred[question] {
                 return .success(answer)
             }
             return Fns.ask(
