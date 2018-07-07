@@ -8,7 +8,7 @@ public enum Predicate: Equatable {
 
     public typealias EvaluationResult = Rules.Result<Predicate.EvaluationError, Predicate.Evaluation>
 
-    public typealias Match = Set<Context.RHSKey>
+    public typealias Match = Set<Context.Question>
 
     case `false`
     case `true`
@@ -18,7 +18,7 @@ public enum Predicate: Equatable {
     indirect case comparison(lhs: Expression, op: ComparisonOperator, rhs: Expression)
 
     public enum Expression: Equatable {
-        case key(Key)
+        case question(Question)
         case value(Value)
         case predicate(Predicate)
     }
@@ -32,8 +32,8 @@ public enum Predicate: Equatable {
         case isGreaterThanOrEqualTo
     }
 
-    public struct Key: Equatable, Codable {
-        public let value: Context.RHSKey
+    public struct Question: Equatable, Codable {
+        public let identifier: Context.Question
     }
 
     // does not include `.bool` because `.true` and `.false` are directly in `Predicate`
@@ -60,7 +60,7 @@ public enum Predicate: Equatable {
 
     public struct Evaluation: Equatable {
         public let value: Bool
-        public let keys: Set<Context.RHSKey>
+        public let keys: Set<Context.Question>
 
         public static let `false` = Evaluation(value: false, keys: [])
         public static let `true` = Evaluation(value: true, keys: [])
@@ -92,28 +92,28 @@ public enum Predicate: Equatable {
 
 extension Predicate.Expression: Codable {
     enum CodingKeys: String, CodingKey {
-        case key
+        case question
         case value
         case predicate
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if container.contains(.key) {
-            self = .key(.init(value: try container.decode(String.self, forKey: .key)))
+        if container.contains(.question) {
+            self = .question(.init(identifier: try container.decode(String.self, forKey: .question)))
         } else if container.contains(.value) {
             self = .value(try container.decode(Predicate.Value.self, forKey: .value))
         } else if container.contains(.predicate) {
             self = .predicate(try container.decode(Predicate.self, forKey: .predicate))
         } else {
-            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "no key, value or predicate key"))
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the JSON object: 'question', 'value' 'predicate'"))
         }
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case .key(let key):
-            try container.encode(key.value, forKey: .key)
+        case .question(let question):
+            try container.encode(question.identifier, forKey: .question)
         case .value(let value):
             try container.encode(value, forKey: .value)
         case .predicate(let predicate):
@@ -256,7 +256,7 @@ extension Predicate.ComparisonOperator {
     }
 }
 
-extension Context.Answer {
+extension Context.AnswerWithDependencies {
     /// returns `nil` for `.bool`, as that does not exist in `Predicate.Value`. Otherwise, the corresponding value.
     func asPredicateValue() -> Predicate.Value? {
         switch self {
@@ -272,10 +272,10 @@ extension Context.Answer {
 /// Evaluates the sub-`Predicate`s of compound `Predicate`s of types: `.and`, `.or`.
 /// - parameters:
 ///   - predicates: the sub-`Predicate`s associated with the compound `Predicate` being evaluated.
-///   - context: the `Context` to look up `key`s from.
+///   - context: the `Context` to look up `questions`s from.
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
 func evaluateCompound(predicates: [Predicate], in context: Context, identity: Bool) -> Predicate.EvaluationResult {
-    var keys: Set<Context.RHSKey> = []
+    var keys: Set<Context.Question> = []
     for predicate in predicates {
         let result = evaluate(predicate: predicate, in: context)
         switch result {
@@ -312,14 +312,14 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
     }
 }
 
-/// only succeeds if the key evaluates to a boolean value
+/// only succeeds if the question evaluates to a boolean answer
 /// otherwise, .failed(.typeMismatch)
-func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, key: Context.RHSKey, in context: Context) -> Predicate.EvaluationResult {
+func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Context.Question, in context: Context) -> Predicate.EvaluationResult {
     let pResult = evaluate(predicate: predicate, in: context)
     switch pResult {
     case .failed: return pResult
     case .success(let pResult):
-        let result = context[key]
+        let result = context[question]
         switch result {
         case .failed(let answerError):
             return .failed(.keyEvaluationFailed(answerError))
@@ -327,7 +327,7 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, key: C
             return .success(
                 .init(
                     value: f(pResult.value, bool),
-                    keys: match.union(pResult.keys).union([key])
+                    keys: match.union(pResult.keys).union([question])
                 )
             )
         case .success:
@@ -336,7 +336,7 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, key: C
     }
 }
 
-func compareAnswers(lhs: Context.Answer, op: Predicate.ComparisonOperator, rhs: Context.Answer, keys: Set<Context.RHSKey>) -> Predicate.EvaluationResult {
+func compareAnswers(lhs: Context.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Context.AnswerWithDependencies, keys: Set<Context.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case let (.bool(lhsValue, lhsMatch), .bool(rhsValue, rhsMatch)):
         return op.same(lhsValue, rhsValue)
@@ -362,7 +362,7 @@ func compareAnswers(lhs: Context.Answer, op: Predicate.ComparisonOperator, rhs: 
 // if both keys evaluate to boolean values
 //   only succeeds if the op is == or !=
 //   otherwise .failed(.predicatesAreOnlyEquatableNotComparable)
-func compareKeyToKey(lhs: Context.RHSKey, op: Predicate.ComparisonOperator, rhs: Context.RHSKey, in context: Context) -> Predicate.EvaluationResult {
+func compareKeyToKey(lhs: Context.Question, op: Predicate.ComparisonOperator, rhs: Context.Question, in context: Context) -> Predicate.EvaluationResult {
     let lhsResult = context[lhs]
     switch lhsResult {
     case .failed(let answerError):
@@ -378,22 +378,22 @@ func compareKeyToKey(lhs: Context.RHSKey, op: Predicate.ComparisonOperator, rhs:
     }
 }
 
-// only succeeds if the `key` evaluates to the "same" type as the `value`
+// only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
-// if the `key` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareKeyToValue(key: Context.RHSKey, op: Predicate.ComparisonOperator, value: Predicate.Value, in context: Context) -> Predicate.EvaluationResult {
-    let answerResult = context[key]
+// if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
+func compareKeyToValue(question: Context.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, in context: Context) -> Predicate.EvaluationResult {
+    let answerResult = context[question]
     switch answerResult {
     case .failed(let answerError):
         return .failed(.keyEvaluationFailed(answerError))
     case .success(let answer):
         return answer.asPredicateValue()
-            .map { compareValueToValue(lhs: $0, op: op, rhs: value, match: answer.match.union([key])) }
+            .map { compareValueToValue(lhs: $0, op: op, rhs: value, match: answer.dependencies.union([question])) }
             ?? .failed(.typeMismatch)
     }
 }
 
-func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, match: Set<Context.RHSKey>) -> Predicate.EvaluationResult {
+func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, match: Set<Context.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case (.int(let lhs), .int(let rhs)):
         return .success(.init(value: op.compare(lhs, rhs), keys: match))
@@ -437,22 +437,22 @@ func evaluate(predicate: Predicate, in context: Context) -> Predicate.Evaluation
          .comparison(.value, _, .predicate):
         return .failed(.typeMismatch)
 
-    case .comparison(.predicate(let p), .isEqualTo, .key(let key)),
-         .comparison(.key(let key), .isEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: ==, key: key.value, in: context)
+    case .comparison(.predicate(let p), .isEqualTo, .question(let question)),
+         .comparison(.question(let question), .isEqualTo, .predicate(let p)):
+        return comparePredicateToKey(predicate: p, f: ==, question: question.identifier, in: context)
 
-    case .comparison(.predicate(let p), .isNotEqualTo, .key(let key)),
-         .comparison(.key(let key), .isNotEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: !=, key: key.value, in: context)
+    case .comparison(.predicate(let p), .isNotEqualTo, .question(let question)),
+         .comparison(.question(let question), .isNotEqualTo, .predicate(let p)):
+        return comparePredicateToKey(predicate: p, f: !=, question: question.identifier, in: context)
 
-    case .comparison(.key(let lhs), let op, .key(let rhs)):
-        return compareKeyToKey(lhs: lhs.value, op: op, rhs: rhs.value, in: context)
+    case .comparison(.question(let lhs), let op, .question(let rhs)):
+        return compareKeyToKey(lhs: lhs.identifier, op: op, rhs: rhs.identifier, in: context)
 
-    case .comparison(.key(let key), let op, .value(let value)):
-        return compareKeyToValue(key: key.value, op: op, value: value, in: context)
+    case .comparison(.question(let question), let op, .value(let value)):
+        return compareKeyToValue(question: question.identifier, op: op, value: value, in: context)
 
-    case .comparison(.value(let value), let op, .key(let key)):
-        return compareKeyToValue(key: key.value, op: op.swapped, value: value, in: context)
+    case .comparison(.value(let value), let op, .question(let question)):
+        return compareKeyToValue(question: question.identifier, op: op.swapped, value: value, in: context)
 
     case .comparison(.value(let lhs), let op, .value(let rhs)):
         return compareValueToValue(lhs: lhs, op: op, rhs: rhs, match: [])
@@ -486,8 +486,8 @@ public func parse(format rawFormat: String) -> NSPredicate {
 
 /// NSPredicate cannot parse "true" or "false", it must be "TRUEPREDICATE" or
 /// "FALSEPREDICATE". It can parse true and false inside comparisons like
-/// "key == true" though. So, this deals with that issue before handing the
-/// predicate format string to the `NSPredicate` initializer.
+/// "someQuestion == true" though. So, this deals with that issue before handing
+/// the predicate format string to the `NSPredicate` initializer.
 func cleaned(format rawFormat: String) -> String {
     switch rawFormat.trimmingCharacters(in: .whitespacesAndNewlines) {
     case let trimmed where trimmed.lowercased() == "true": return "TRUEPREDICATE"
@@ -599,7 +599,7 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
             return .failed(.unsupportedConstantValue)
         }
     case .keyPath:
-        return .success(.key(.init(value: expr.keyPath)))
+        return .success(.question(.init(identifier: expr.keyPath)))
     case .evaluatedObject,
          .variable,
          .function,

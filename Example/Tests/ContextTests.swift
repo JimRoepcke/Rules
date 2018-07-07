@@ -10,7 +10,7 @@ import Nimble
 @testable import Rules
 
 extension Context.AnswerError {
-    static let mock: Context.AnswerError = .noRuleFound(key: "key")
+    static let mock: Context.AnswerError = .noRuleFound(question: "key")
 }
 
 extension Engine {
@@ -37,19 +37,19 @@ class ContextTests: QuickSpec {
                     failed = true
                     return $0
                 }
-                let onS: (Context.Answer) -> Context.Answer = {
+                let onS: (Context.AnswerWithDependencies) -> Context.AnswerWithDependencies = {
                     succeeded = true
                     return $0
                 }
 
-                let result = Fns.lookup(
-                    key: "missing",
+                let result = Fns.ask(
+                    question: "missing",
                     in: .mockf(),
                     onFailure: onF,
                     onSuccess: onS
                 )
 
-                expect(result) == LookupResult.failed(.noRuleFound(key: "missing"))
+                expect(result) == AnswerWithDependenciesResult.failed(.noRuleFound(question: "missing"))
 
                 expect(failed).to(beTrue())
                 expect(succeeded).to(beFalse())

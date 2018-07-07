@@ -10,18 +10,18 @@ public class Engine {
         self.rules = [:]
     }
 
-    var rules: [Context.RHSKey: [Int: [Rule]]]
+    var rules: [Context.Question: [Int: [Rule]]]
 
     public func add(rule: Rule) {
         // TODO: don't add the rule if it's already added - need the fingerprint for this
-        rules[rule.key, default: [:]][rule.priority, default: []].append(rule)
+        rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
     }
 
     typealias Candidate = (rule: Rule, match: Predicate.Match)
 
-    func candidates(for key: Context.RHSKey, in context: Context) -> [Candidate] {
+    func candidates(for question: Context.Question, in context: Context) -> [Candidate] {
         var results: [Candidate] = []
-        guard let rulesForKey = rules[key] else {
+        guard let rulesForKey = rules[question] else {
             return []
         }
         let priorities = rulesForKey.keys.sorted(by: >)
@@ -51,16 +51,16 @@ public class Engine {
         return results
     }
 
-    /// only called when `context` has no stored or cached value for this key
-    public func question(key: Context.RHSKey, in context: Context) -> QuestionWithMatchResult {
+    /// only called when `context` has no stored or cached answer for this question
+    public func ask(question: Context.Question, in context: Context) -> AnswerWithDependenciesResult {
         // find candidate rules
-        let candidateRules = candidates(for: key, in: context)
+        let candidateRules = candidates(for: question, in: context)
         if candidateRules.isEmpty {
-            return .failed(.noRuleFound(key: key))
+            return .failed(.noRuleFound(question: question))
         } else if candidateRules.count > 1 {
             // TODO: consider not failing, just picking one
             // TODO: consider candidates(for:in:) preferring a non-ambiguous lower priority rule to an ambiguous rule
-            return .failed(.ambiguous(key: key))
+            return .failed(.ambiguous(question: question))
         } else {
             let candidateRule = candidateRules[0].rule
             return candidateRule
@@ -70,7 +70,7 @@ public class Engine {
     }
 }
 
-public typealias QuestionWithMatchResult = Rules.Result<Context.AnswerError, Context.Answer>
+public typealias AnswerWithDependenciesResult = Rules.Result<Context.AnswerError, Context.AnswerWithDependencies>
 
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.

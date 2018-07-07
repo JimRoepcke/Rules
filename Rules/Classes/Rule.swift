@@ -12,29 +12,30 @@
 ///
 /// _"If the LHS is true, then the RHS declares this fact."_
 ///
-/// The RHS (or right hand side) of a `Rule` declares a fact. The fact is a
-/// `value` for a `key`. An `Engine` is used to get the `value` of a `key`.
+/// The RHS (or right hand side) of a `Rule` declares a fact. The fact is an
+/// `answer` for a `question`. An `Engine` is used to get the `answer` of a
+/// `question`.
 ///
 /// The LHS (or left hand side) of a `Rule` is comprised of two parts:
 /// - its `priority` ranks the importance of the `Rule` relative to others.
 /// - its `predicate` can be evaluated to a `Bool`, given a `Context`.
 ///
 /// The RHS (or right hand side) of a `Rule` is comprised of three parts:
-/// - a `key`, which is the identifier for the
+/// - a `question`, which is the identifier for a fact.
 ///
-/// Given a set of `Rule`s with the same RHS `key`, the `Rule` that "wins" or
-/// "takes effect" or "applies" is the one with the highest `priority` amongst
-/// the subset of `Rules` whose `predicate` evaluates to `true` in a given
-/// `Context`.
+/// Given a set of `Rule`s with the same RHS `question`, the `Rule` that "wins"
+/// or "takes effect" or "applies" is the one with the highest `priority`
+/// amongst the subset of `Rules` whose `predicate` evaluates to `true` in a
+/// given `Context`.
 ///
 /// When a rule takes effect, the fact it declared is cached in the `Context`.
 /// The `Context` knows which other values were considered 
 ///
-/// - note: a `Rule` is invalid if its `predicate` contains the RHS `key`.
+/// - note: a `Rule` is invalid if its `predicate` contains its `question`.
 public struct Rule {
 
-    /// If an Assignment cannot provide a `Context.Answer`, it returns one
-    /// of these error cases.
+    /// If an `Assignment` cannot provide a `Context.AnswerWithDependencies`, it
+    /// returns one of these cases.
     public enum FiringError: Swift.Error, Equatable {
         /// An unexpected error occurred.
         /// - parameter debugDescription: use for debug logging.
@@ -45,7 +46,7 @@ public struct Rule {
         case invalidRHSValue(debugDescription: String, value: Predicate.Value)
     }
 
-    public typealias FiringResult = Rules.Result<FiringError, Context.Answer>
+    public typealias FiringResult = Rules.Result<FiringError, Context.AnswerWithDependencies>
 
     /// TODO: this is going to change to a `String` which the `Engine` uses to look up
     /// an `Assignment` function by name. This will make it easy to make the
@@ -61,26 +62,28 @@ public struct Rule {
     /// The LHS condition of the `Rule`. A `Rule`'s RHS only applies if its
     /// `predicate` matches the current state of the `Context`.
     ///
-    /// - note: The predicate can include comparison against other keys whose
-    ///         values are not stored in the `Context`. The value of those keys
-    ///         will be looked up using the `Context` recursively.
+    /// - note: The predicate can include comparison against other questions
+    ///         whose values are not stored in the `Context`. The answer to
+    ///         those questions will be determined recursively.
     public let predicate: Predicate
 
-    /// The RHS `key` is the identifier which the `RHS` `value` is associated with.
-    public let key: Context.RHSKey // which is `String`
+    /// The RHS `question` is the identifier which the `RHS` `answer` is
+    /// associated with.
+    public let question: Context.Question
 
-    /// Enumerates the possible return `value`s associated with a `Rule`.
-    public enum Value: Equatable {
+    /// Enumerates the possible `answer`s associated with a `Rule`.
+    public enum Answer: Equatable {
         case bool(Bool)
         case double(Double)
         case int(Int)
         case string(String)
     }
 
-    /// The `Context` provides this RHS `value` as the result of a question for
-    /// this `Rule`'s RHS `key` iff this `Rule` has the highest `priority`
-    /// amongst all `Rule`s currently matching the state of the `Context`.
-    public let value: Context.RHSValue // currently `String`, will change to `Value`
+    /// The `Context` provides this RHS `answer` as the result of a question for
+    /// this `Rule`'s RHS `question` iff this `Rule` has the highest `priority`
+    /// amongst all `Rule`s for that question currently matching the state of
+    /// the `Context`.
+    public let answer: Context.Answer
 
     /// the standard/default assignment will just return the `value` as is.
     public let assignment: Assignment // will change to `String`
@@ -110,9 +113,9 @@ typealias RuleParsingResult = Rules.Result<RuleParsingError, Rule>
 /// This parser is not completely finished, it's not quite robust enough
 func parse(humanRule: String) -> RuleParsingResult {
     // right now this parses:
-    //   priority: predicate => key = value
+    //   priority: predicate => question = answer
     // eventually it will support:
-    //   priority: predicate => key = value [assignment]
+    //   priority: predicate => question = answer [assignment]
     // and value will not be assumed to be a `String`, it will be support
     // all the types in `Rule.Value`, which are `String`, `Int`, `Double`, and
     // `Bool`.
@@ -136,11 +139,11 @@ func parse(humanRule: String) -> RuleParsingResult {
     guard rhsParts.count == 2 else {
         return .failed(.equalOperatorNotFound)
     }
-    let key = rhsParts[0]
+    let question = rhsParts[0]
 
     // for now, leave the assignment out of the textual rule format
-    let valueAndAssignment = rhsParts[1]
-    let value = valueAndAssignment
+    let answerAndAssignment = rhsParts[1]
+    let answer = answerAndAssignment
     let predicateResult = convert(ns: parse(format: predicateFormat))
     switch predicateResult {
     case .failed(let error):
@@ -150,9 +153,9 @@ func parse(humanRule: String) -> RuleParsingResult {
             Rule(
                 priority: priority,
                 predicate: predicate,
-                key: key,
-                value: value,
-                assignment: { rule, _, match in .success(.string(rule.value, match: match)) }
+                question: question,
+                answer: .string(answer), // TODO: support other types
+                assignment: { rule, _, match in .success(rule.answer.asAnswerWithDependencies(match)) }
             )
         )
     }

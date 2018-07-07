@@ -252,45 +252,45 @@ class PredicateTests: QuickSpec {
                 }
 
                 it("can check equality of the same key") {
-                    let sut = SUT.comparison(lhs: .key(.init(value: "test")), op: .isEqualTo, rhs: .key(.init(value: "test")))
+                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let context = Context.mockf()
-                    context.store(answer: .int(0, match: []), forKey: "test")
+                    context.store(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: true, keys: ["test"]))
                     // this answer will be true even if the value changes, so no dependent keys
                 }
 
                 it("can check inequality of the same key") {
-                    let sut = SUT.comparison(lhs: .key(.init(value: "test")), op: .isNotEqualTo, rhs: .key(.init(value: "test")))
+                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isNotEqualTo, rhs: .question(.init(identifier: "test")))
                     let context = Context.mockf()
-                    context.store(answer: .int(0, match: []), forKey: "test")
+                    context.store(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: false, keys: ["test"]))
                     // this answer will be false even if the value changes, so no dependent keys
                 }
 
                 it("can check equality of different keys") {
-                    let sut = SUT.comparison(lhs: .key(.init(value: "test1")), op: .isEqualTo, rhs: .key(.init(value: "test2")))
+                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test1")), op: .isEqualTo, rhs: .question(.init(identifier: "test2")))
                     let context = Context.mockf()
-                    context.store(answer: .int(0, match: []), forKey: "test1")
-                    context.store(answer: .int(1, match: []), forKey: "test2")
+                    context.store(answer: .int(0), forQuestion: "test1")
+                    context.store(answer: .int(1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: false, keys: ["test1", "test2"]))
                     // this answer will be true even if the value changes, so no dependent keys
                 }
 
                 it("can compare a key to a value") {
-                    let sut = SUT.comparison(lhs: .key(.init(value: "test")), op: .isEqualTo, rhs: .value(.int(0)))
+                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .value(.int(0)))
                     let context = Context.mockf()
-                    context.store(answer: .int(0, match: []), forKey: "test")
+                    context.store(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: true, keys: ["test"]))
                 }
 
                 it("can compare a predicate to a key") {
-                    let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .key(.init(value: "test")))
+                    let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let context = Context.mockf()
-                    context.store(answer: .bool(true, match: []), forKey: "test")
+                    context.store(answer: .bool(true), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: true, keys: ["test"]))
                 }
@@ -329,7 +329,7 @@ class PredicateTests: QuickSpec {
                         .and(
                             [
                                 .comparison(
-                                    lhs: .key(.init(value: "someKey")),
+                                    lhs: .question(.init(identifier: "someKey")),
                                     op: .isEqualTo,
                                     rhs: .value(.string("someValue"))
                                 ),
@@ -345,7 +345,7 @@ class PredicateTests: QuickSpec {
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .key(.init(value: "someKey")),
+                            lhs: .question(.init(identifier: "someKey")),
                             op: .isEqualTo,
                             rhs: .value(.int(-42))
                         )
@@ -358,7 +358,7 @@ class PredicateTests: QuickSpec {
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .key(.init(value: "someKey")),
+                            lhs: .question(.init(identifier: "someKey")),
                             op: .isEqualTo,
                             rhs: .predicate(.false)
                         )
@@ -371,7 +371,7 @@ class PredicateTests: QuickSpec {
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .key(.init(value: "someKey")),
+                            lhs: .question(.init(identifier: "someKey")),
                             op: .isEqualTo,
                             rhs: .predicate(.true)
                         )
@@ -384,7 +384,7 @@ class PredicateTests: QuickSpec {
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .key(.init(value: "someKey")),
+                            lhs: .question(.init(identifier: "someKey")),
                             op: .isEqualTo,
                             rhs: .value(.double(2.5))
                         )
