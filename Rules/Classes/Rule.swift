@@ -71,14 +71,6 @@ public struct Rule {
     /// associated with.
     public let question: Facts.Question
 
-    /// Enumerates the possible `answer`s associated with a `Rule`.
-    public enum Answer: Equatable {
-        case bool(Bool)
-        case double(Double)
-        case int(Int)
-        case string(String)
-    }
-
     /// The `Facts` provides this RHS `answer` as the result of a question for
     /// this `Rule`'s RHS `question` iff this `Rule` has the highest `priority`
     /// amongst all `Rule`s for that question currently matching the state of
@@ -153,7 +145,7 @@ func parse(humanRule: String) -> RuleParsingResult {
             Rule(
                 priority: priority,
                 predicate: predicate,
-                question: question,
+                question: .init(identifier: question),
                 answer: .string(answer), // TODO: support other types
                 assignment: { rule, _, match in .success(rule.answer.asAnswerWithDependencies(match)) }
             )

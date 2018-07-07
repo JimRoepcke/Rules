@@ -4,9 +4,49 @@
 //  License: MIT, included below
 //
 
+/// A mutable collection of answers to questions, both known and inferred.
+///
+/// **Known facts** are provided directly by the client of the `Facts`. Use
+/// the `store(answer:forQuestion:)` method to create a known fact.
+///
+/// **Inferred facts** are provided by an `Brain` configured with `Rule`s.
+/// Use the `Brain.add(rule:)` method to configure the `Brain` provided
+/// in the `Facts` initializer.
+///
+/// If you need an answer to a question, use the `ask(question:) method`.
+/// It replies with a `AnswerResult` containing either:
+/// - `.success(Facts.Answer)`, or
+/// - `.failed(Facts.AnswerError)`.
+///
+/// The `Facts` remembers (caches) all inferred answers it learns about via
+/// asked questions. It knows which other questions, stored and inferred, that
+/// were considered when producing the inferred answer, and automatically
+/// invalidates its memory (cache) when dependencies change.
 public class Facts {
 
-    public typealias Question = String
+    public struct Question: Hashable, Codable, ExpressibleByStringLiteral {
+        public let identifier: String
+
+        public typealias StringLiteralType = String
+
+        public init(stringLiteral: String) {
+            self.identifier = stringLiteral
+        }
+
+        public init(identifier: String) {
+            self.identifier = identifier
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            self.identifier = try container.decode(String.self)
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(identifier)
+        }
+    }
 
     public enum Answer: Equatable {
         case bool(Bool)

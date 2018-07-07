@@ -18,7 +18,7 @@ public enum Predicate: Equatable {
     indirect case comparison(lhs: Expression, op: ComparisonOperator, rhs: Expression)
 
     public enum Expression: Equatable {
-        case question(Question)
+        case question(Facts.Question)
         case value(Value)
         case predicate(Predicate)
     }
@@ -30,10 +30,6 @@ public enum Predicate: Equatable {
         case isGreaterThan
         case isLessThanOrEqualTo
         case isGreaterThanOrEqualTo
-    }
-
-    public struct Question: Equatable, Codable {
-        public let identifier: Facts.Question
     }
 
     // does not include `.bool` because `.true` and `.false` are directly in `Predicate`
@@ -99,7 +95,7 @@ extension Predicate.Expression: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         if container.contains(.question) {
-            self = .question(.init(identifier: try container.decode(String.self, forKey: .question)))
+            self = .question(try container.decode(Facts.Question.self, forKey: .question))
         } else if container.contains(.value) {
             self = .value(try container.decode(Predicate.Value.self, forKey: .value))
         } else if container.contains(.predicate) {
@@ -439,20 +435,20 @@ func evaluate(predicate: Predicate, in context: Facts) -> Predicate.EvaluationRe
 
     case .comparison(.predicate(let p), .isEqualTo, .question(let question)),
          .comparison(.question(let question), .isEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: ==, question: question.identifier, in: context)
+        return comparePredicateToKey(predicate: p, f: ==, question: question, in: context)
 
     case .comparison(.predicate(let p), .isNotEqualTo, .question(let question)),
          .comparison(.question(let question), .isNotEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: !=, question: question.identifier, in: context)
+        return comparePredicateToKey(predicate: p, f: !=, question: question, in: context)
 
     case .comparison(.question(let lhs), let op, .question(let rhs)):
-        return compareKeyToKey(lhs: lhs.identifier, op: op, rhs: rhs.identifier, in: context)
+        return compareKeyToKey(lhs: lhs, op: op, rhs: rhs, in: context)
 
     case .comparison(.question(let question), let op, .value(let value)):
-        return compareKeyToValue(question: question.identifier, op: op, value: value, in: context)
+        return compareKeyToValue(question: question, op: op, value: value, in: context)
 
     case .comparison(.value(let value), let op, .question(let question)):
-        return compareKeyToValue(question: question.identifier, op: op.swapped, value: value, in: context)
+        return compareKeyToValue(question: question, op: op.swapped, value: value, in: context)
 
     case .comparison(.value(let lhs), let op, .value(let rhs)):
         return compareValueToValue(lhs: lhs, op: op, rhs: rhs, match: [])
