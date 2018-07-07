@@ -31,28 +31,31 @@ class FactsTests: QuickSpec {
         describe("FactsFunctions") {
 
             describe("lookup") {
-                var failed = false
-                var succeeded = false
-                let onF: (Facts.AnswerError) -> Facts.AnswerError = {
-                    failed = true
-                    return $0
+
+                it("fails to answer a question when it does not know the answer and no rules were found for that question") {
+                    var failed = false
+                    var succeeded = false
+                    let onF: (Facts.AnswerError) -> Facts.AnswerError = {
+                        failed = true
+                        return $0
+                    }
+                    let onS: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies = {
+                        succeeded = true
+                        return $0
+                    }
+
+                    let result = Fns.ask(
+                        question: "missing",
+                        given: .mockf(),
+                        onFailure: onF,
+                        onSuccess: onS
+                    )
+
+                    expect(result) == AnswerWithDependenciesResult.failed(.candidateEvaluationFailed(.questionEvaluationFailed(.noRuleFound(question: "missing"))))
+
+                    expect(failed).to(beTrue())
+                    expect(succeeded).to(beFalse())
                 }
-                let onS: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies = {
-                    succeeded = true
-                    return $0
-                }
-
-                let result = Fns.ask(
-                    question: "missing",
-                    given: .mockf(),
-                    onFailure: onF,
-                    onSuccess: onS
-                )
-
-                expect(result) == AnswerWithDependenciesResult.failed(.noRuleFound(question: "missing"))
-
-                expect(failed).to(beTrue())
-                expect(succeeded).to(beFalse())
 
             }
         }

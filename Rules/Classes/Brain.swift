@@ -36,14 +36,16 @@ public class Brain {
 
     typealias Candidate = (rule: Rule, dependencies: Facts.Dependencies)
 
-    func candidates(for question: Facts.Question, given facts: Facts) -> [Candidate] {
-        var results: [Candidate] = []
-        guard let rulesForKey = rules[question] else {
-            return []
+    typealias CandidatesResult = Rules.Result<Predicate.EvaluationError, [Candidate]>
+
+    func candidates(for question: Facts.Question, given facts: Facts) -> CandidatesResult {
+        guard let rulesForQuestion = rules[question] else {
+            return .failed(.questionEvaluationFailed(.noRuleFound(question: question)))
         }
-        let priorities = rulesForKey.keys.sorted(by: >)
+        var candidates: [Candidate] = []
+        let priorities = rulesForQuestion.keys.sorted(by: >)
         for priority in priorities {
-            guard let rules = rulesForKey[priority], !rules.isEmpty else {
+            guard let rules = rulesForQuestion[priority], !rules.isEmpty else {
                 continue
             }
             // there are multiple candidate rules with the same priority
@@ -51,21 +53,28 @@ public class Brain {
             let rulesSortedBySize = rules.sorted { $0.predicate.size > $1.predicate.size }
             let maxSize = rulesSortedBySize.first?.predicate.size
             for rule in rulesSortedBySize {
-                if rule.predicate.size == maxSize || results.isEmpty {
-                    if let dependencies = rule.predicate.matches(given: facts) {
-                        results.append((rule, dependencies))
+                if rule.predicate.size == maxSize || candidates.isEmpty {
+                    let evaluationResult = rule.predicate.matches(given: facts)
+                    switch evaluationResult {
+                    case .failed(let error):
+                        return .failed(error)
+                    case .success(let evaluation) where evaluation.value:
+                        candidates.append((rule, evaluation.dependencies))
+                    case .success:
+                        // nothing to do
+                        break // break the switch, not the loop!
                     }
-                } else if !results.isEmpty {
-                    break
+                } else if !candidates.isEmpty {
+                    break // break the loop!
                 }
                 // otherwise continue evaluating rules at this priority
             }
             // if any rules matched at this priority, the lower priority rules are ineligible
-            if !results.isEmpty {
+            if !candidates.isEmpty {
                 break
             }
         }
-        return results
+        return .success(candidates)
     }
 
     public enum AmbiguousCandidateRulesStrategy: Equatable {
@@ -100,16 +109,21 @@ public class Brain {
     /// only called when `facts` has no known or inferred answer for this question
     public func ask(question: Facts.Question, given facts: Facts) -> AnswerWithDependenciesResult {
         // find candidate rules
-        let candidateRules = candidates(for: question, given: facts)
-        let chosenCandidateResult = chooseRule(for: question, amongst: candidateRules)
-        switch chosenCandidateResult {
+        let candidateRulesResult = candidates(for: question, given: facts)
+        switch candidateRulesResult {
         case .failed(let error):
-            return .failed(error)
-        case .success(let candidate):
-            return candidate
-                .rule
-                .fire(given: facts, dependencies: candidate.dependencies)
-                .bimap(Facts.AnswerError.firingFailed, Rules.id)
+            return .failed(.candidateEvaluationFailed(error))
+        case .success(let candidateRules):
+            let chosenCandidateResult = chooseRule(for: question, amongst: candidateRules)
+            switch chosenCandidateResult {
+            case .failed(let error):
+                return .failed(error)
+            case .success(let candidate):
+                return candidate
+                    .rule
+                    .fire(given: facts, dependencies: candidate.dependencies)
+                    .bimap(Facts.AnswerError.firingFailed, Rules.id)
+            }
         }
     }
 }

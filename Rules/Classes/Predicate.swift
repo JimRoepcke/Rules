@@ -67,17 +67,11 @@ public enum Predicate: Equatable {
     public enum EvaluationError: Error, Equatable {
         case typeMismatch
         case predicatesAreOnlyEquatableNotComparable
-        case keyEvaluationFailed(Facts.AnswerError)
+        case questionEvaluationFailed(Facts.AnswerError)
     }
 
-    public func matches(given facts: Facts) -> Facts.Dependencies? { // TODO: change this to return a `Rules.Result`
-        let evaluation = evaluate(predicate: self, given: facts)
-        switch evaluation {
-        case .failed:
-            return nil // TODO: this should be returning the error
-        case .success(let result):
-            return result.dependencies
-        }
+    public func matches(given facts: Facts) -> EvaluationResult {
+        return evaluate(predicate: self, given: facts)
     }
 
 }
@@ -316,7 +310,7 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, questi
         let result = facts[question]
         switch result {
         case .failed(let answerError):
-            return .failed(.keyEvaluationFailed(answerError))
+            return .failed(.questionEvaluationFailed(answerError))
         case .success(.bool(let bool, let dependencies)):
             return .success(
                 .init(
@@ -360,12 +354,12 @@ func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOper
     let lhsResult = facts[lhs]
     switch lhsResult {
     case .failed(let answerError):
-        return .failed(.keyEvaluationFailed(answerError))
+        return .failed(.questionEvaluationFailed(answerError))
     case .success(let lhsAnswer):
         let rhsResult = facts[rhs]
         switch rhsResult {
         case .failed(let answerError):
-            return .failed(.keyEvaluationFailed(answerError))
+            return .failed(.questionEvaluationFailed(answerError))
         case .success(let rhsAnswer):
             return compareAnswers(lhs: lhsAnswer, op: op, rhs: rhsAnswer, dependencies: [lhs, rhs])
         }
@@ -379,7 +373,7 @@ func compareQuestionToValue(question: Facts.Question, op: Predicate.ComparisonOp
     let answerResult = facts[question]
     switch answerResult {
     case .failed(let answerError):
-        return .failed(.keyEvaluationFailed(answerError))
+        return .failed(.questionEvaluationFailed(answerError))
     case .success(let answer):
         return answer.asPredicateValue()
             .map { compareValueToValue(lhs: $0, op: op, rhs: value, dependencies: answer.dependencies.union([question])) }

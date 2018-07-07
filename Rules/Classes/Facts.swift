@@ -132,6 +132,7 @@ public class Facts {
     }
 
     public enum AnswerError: Swift.Error, Equatable {
+        indirect case candidateEvaluationFailed(Predicate.EvaluationError)
         case noRuleFound(question: Question)
         case ambiguous(question: Question)
         case firingFailed(Rule.FiringError)
