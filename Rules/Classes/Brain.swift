@@ -10,6 +10,10 @@ public class Brain {
         self.rules = [:]
     }
 
+    public init(copying other: Brain) {
+        self.rules = other.rules
+    }
+
     var rules: [Facts.Question: [Int: [Rule]]]
 
     public func add(rule: Rule) {
