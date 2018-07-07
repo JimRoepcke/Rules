@@ -85,8 +85,8 @@ public struct Rule {
 
     /// This method is going to move into `Facts` when `assignment`
     /// is changed from a function to a `String`
-    func fire(in context: Facts, match: Predicate.Match) -> FiringResult {
-        return assignment(self, context, match)
+    func fire(given facts: Facts, match: Predicate.Match) -> FiringResult {
+        return assignment(self, facts, match)
     }
 }
 

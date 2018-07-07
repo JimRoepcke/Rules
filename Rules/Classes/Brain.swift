@@ -10,12 +10,18 @@
 /// Instances of `Brain` are **not** thread-safe.
 public class Brain {
 
-    public init() {
+    public convenience init() {
+        self.init(ambiguousCandidateRulesStrategy: .fail)
+    }
+
+    public init(ambiguousCandidateRulesStrategy: AmbiguousCandidateRulesStrategy) {
         self.rules = [:]
+        self.ambiguousCandidateRulesStrategy = ambiguousCandidateRulesStrategy
     }
 
     public init(copying other: Brain) {
         self.rules = other.rules
+        self.ambiguousCandidateRulesStrategy = other.ambiguousCandidateRulesStrategy
     }
 
     /// The `rules` used to infer answers to questions
@@ -30,7 +36,7 @@ public class Brain {
 
     typealias Candidate = (rule: Rule, match: Predicate.Match)
 
-    func candidates(for question: Facts.Question, in context: Facts) -> [Candidate] {
+    func candidates(for question: Facts.Question, given facts: Facts) -> [Candidate] {
         var results: [Candidate] = []
         guard let rulesForKey = rules[question] else {
             return []
@@ -46,7 +52,7 @@ public class Brain {
             let maxSize = rulesSortedBySize.first?.predicate.size
             for rule in rulesSortedBySize {
                 if rule.predicate.size == maxSize || results.isEmpty {
-                    if let match = rule.predicate.matches(in: context) {
+                    if let match = rule.predicate.matches(given: facts) {
                         results.append((rule, match))
                     }
                 } else if !results.isEmpty {
@@ -62,20 +68,47 @@ public class Brain {
         return results
     }
 
-    /// only called when `context` has no known or inferred answer for this question
-    public func ask(question: Facts.Question, in context: Facts) -> AnswerWithDependenciesResult {
-        // find candidate rules
-        let candidateRules = candidates(for: question, in: context)
+    public enum AmbiguousCandidateRulesStrategy: Equatable {
+        /// When more than one candidate is found, fail to answer the question.
+        case fail
+        /// When more than one candidate is found, use one of them. The process
+        /// to determine which to use is undefined and subject to change.
+        case undefined
+    }
+
+    /// Defaults to `.fail`.
+    public let ambiguousCandidateRulesStrategy: AmbiguousCandidateRulesStrategy
+
+    typealias CandidateResult = Rules.Result<Facts.AnswerError, Candidate>
+
+    func chooseRule(for question: Facts.Question, amongst candidateRules: [Candidate]) -> CandidateResult {
         if candidateRules.isEmpty {
             return .failed(.noRuleFound(question: question))
         } else if candidateRules.count > 1 {
-            // TODO: consider not failing, just picking one
-            // TODO: consider candidates(for:in:) preferring a non-ambiguous lower priority rule to an ambiguous rule
-            return .failed(.ambiguous(question: question))
+            switch ambiguousCandidateRulesStrategy {
+            case .fail:
+                return .failed(.ambiguous(question: question))
+            case .undefined:
+                /// it would be nice to be able to somehow log a warning here
+                return .success(candidateRules[0])
+            }
         } else {
-            let candidateRule = candidateRules[0].rule
-            return candidateRule
-                .fire(in: context, match: candidateRules[0].match)
+            return .success(candidateRules[0])
+        }
+    }
+
+    /// only called when `facts` has no known or inferred answer for this question
+    public func ask(question: Facts.Question, given facts: Facts) -> AnswerWithDependenciesResult {
+        // find candidate rules
+        let candidateRules = candidates(for: question, given: facts)
+        let chosenCandidateResult = chooseRule(for: question, amongst: candidateRules)
+        switch chosenCandidateResult {
+        case .failed(let error):
+            return .failed(error)
+        case .success(let candidate):
+            return candidate
+                .rule
+                .fire(given: facts, match: candidate.match)
                 .bimap(Facts.AnswerError.firingFailed, Rules.id)
         }
     }

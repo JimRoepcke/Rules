@@ -149,9 +149,9 @@ public class Facts {
             }
             return Fns.ask(
                 question: question,
-                in: self,
+                given: self,
                 onFailure: Rules.id,
-                onSuccess: Fns.cache(question: question, in: self)
+                onSuccess: Fns.cache(question: question, given: self)
             )
         }
     }
@@ -167,21 +167,21 @@ enum FactsFunctions {
 
     static func cache(
         question: Facts.Question,
-        in context: Facts
+        given facts: Facts
         ) -> (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
     {
-        return { context.cache(answer: $0, forQuestion: question) }
+        return { facts.cache(answer: $0, forQuestion: question) }
     }
 
     static func ask(
         question: Facts.Question,
-        in context: Facts,
+        given facts: Facts,
         onFailure: (Facts.AnswerError) -> Facts.AnswerError,
         onSuccess: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
         ) -> AnswerWithDependenciesResult {
-        return context
+        return facts
             .brain
-            .ask(question: question, in: context)
+            .ask(question: question, given: facts)
             .bimap(onFailure, onSuccess)
     }
 }

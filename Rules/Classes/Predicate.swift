@@ -72,8 +72,8 @@ public enum Predicate: Equatable {
         case keyEvaluationFailed(Facts.AnswerError)
     }
 
-    public func matches(in context: Facts) -> Match? { // TODO: change this to return a `Rules.Result`
-        let evaluation = evaluate(predicate: self, in: context)
+    public func matches(given facts: Facts) -> Match? { // TODO: change this to return a `Rules.Result`
+        let evaluation = evaluate(predicate: self, given: facts)
         switch evaluation {
         case .failed:
             return nil // TODO: this should be returning the error
@@ -268,12 +268,12 @@ extension Facts.AnswerWithDependencies {
 /// Evaluates the sub-`Predicate`s of compound `Predicate`s of types: `.and`, `.or`.
 /// - parameters:
 ///   - predicates: the sub-`Predicate`s associated with the compound `Predicate` being evaluated.
-///   - context: the `Facts` to look up `questions`s from.
+///   - facts: the `Facts` to look up `questions`s from.
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
-func evaluateCompound(predicates: [Predicate], in context: Facts, identity: Bool) -> Predicate.EvaluationResult {
+func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Bool) -> Predicate.EvaluationResult {
     var keys: Set<Facts.Question> = []
     for predicate in predicates {
-        let result = evaluate(predicate: predicate, in: context)
+        let result = evaluate(predicate: predicate, given: facts)
         switch result {
         case .failed:
             return result
@@ -287,13 +287,13 @@ func evaluateCompound(predicates: [Predicate], in context: Facts, identity: Bool
     return .success(.init(value: !identity, keys: keys))
 }
 
-func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, in context: Facts) -> Predicate.EvaluationResult {
-    let lhsEvaluation = evaluate(predicate: lhs, in: context)
+func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, given facts: Facts) -> Predicate.EvaluationResult {
+    let lhsEvaluation = evaluate(predicate: lhs, given: facts)
     switch lhsEvaluation {
     case .failed:
         return lhsEvaluation
     case .success(let lhsResult):
-        let rhsEvaluation = evaluate(predicate: rhs, in: context)
+        let rhsEvaluation = evaluate(predicate: rhs, given: facts)
         switch rhsEvaluation {
         case .failed:
             return rhsEvaluation
@@ -310,12 +310,12 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
 
 /// only succeeds if the question evaluates to a boolean answer
 /// otherwise, .failed(.typeMismatch)
-func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Facts.Question, in context: Facts) -> Predicate.EvaluationResult {
-    let pResult = evaluate(predicate: predicate, in: context)
+func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
+    let pResult = evaluate(predicate: predicate, given: facts)
     switch pResult {
     case .failed: return pResult
     case .success(let pResult):
-        let result = context[question]
+        let result = facts[question]
         switch result {
         case .failed(let answerError):
             return .failed(.keyEvaluationFailed(answerError))
@@ -358,13 +358,13 @@ func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonO
 // if both keys evaluate to boolean values
 //   only succeeds if the op is == or !=
 //   otherwise .failed(.predicatesAreOnlyEquatableNotComparable)
-func compareKeyToKey(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, in context: Facts) -> Predicate.EvaluationResult {
-    let lhsResult = context[lhs]
+func compareKeyToKey(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
+    let lhsResult = facts[lhs]
     switch lhsResult {
     case .failed(let answerError):
         return .failed(.keyEvaluationFailed(answerError))
     case .success(let lhsAnswer):
-        let rhsResult = context[rhs]
+        let rhsResult = facts[rhs]
         switch rhsResult {
         case .failed(let answerError):
             return .failed(.keyEvaluationFailed(answerError))
@@ -377,8 +377,8 @@ func compareKeyToKey(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs:
 // only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
 // if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareKeyToValue(question: Facts.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, in context: Facts) -> Predicate.EvaluationResult {
-    let answerResult = context[question]
+func compareKeyToValue(question: Facts.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, given facts: Facts) -> Predicate.EvaluationResult {
+    let answerResult = facts[question]
     switch answerResult {
     case .failed(let answerError):
         return .failed(.keyEvaluationFailed(answerError))
@@ -406,13 +406,13 @@ func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator,
     }
 }
 
-func evaluate(predicate: Predicate, in context: Facts) -> Predicate.EvaluationResult {
+func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationResult {
     switch predicate {
     case .false: return .success(.false)
     case .true: return .success(.true)
-    case .not(let predicate): return evaluate(predicate: predicate, in: context).bimap(Rules.id, Predicate.Evaluation.invert)
-    case .and(let predicates): return evaluateCompound(predicates: predicates, in: context, identity: false)
-    case .or(let predicates): return evaluateCompound(predicates: predicates, in: context, identity: true)
+    case .not(let predicate): return evaluate(predicate: predicate, given: facts).bimap(Rules.id, Predicate.Evaluation.invert)
+    case .and(let predicates): return evaluateCompound(predicates: predicates, given: facts, identity: false)
+    case .or(let predicates): return evaluateCompound(predicates: predicates, given: facts, identity: true)
 
     case .comparison(.predicate, .isLessThan, _),
          .comparison(.predicate, .isGreaterThan, _),
@@ -425,9 +425,9 @@ func evaluate(predicate: Predicate, in context: Facts) -> Predicate.EvaluationRe
         return .failed(.predicatesAreOnlyEquatableNotComparable)
 
     case .comparison(.predicate(let lhs), .isEqualTo, .predicate(let rhs)):
-        return comparePredicates(lhs: lhs, f: ==, rhs: rhs, in: context)
+        return comparePredicates(lhs: lhs, f: ==, rhs: rhs, given: facts)
     case .comparison(.predicate(let lhs), .isNotEqualTo, .predicate(let rhs)):
-        return comparePredicates(lhs: lhs, f: !=, rhs: rhs, in: context)
+        return comparePredicates(lhs: lhs, f: !=, rhs: rhs, given: facts)
 
     case .comparison(.predicate, _, .value),
          .comparison(.value, _, .predicate):
@@ -435,20 +435,20 @@ func evaluate(predicate: Predicate, in context: Facts) -> Predicate.EvaluationRe
 
     case .comparison(.predicate(let p), .isEqualTo, .question(let question)),
          .comparison(.question(let question), .isEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: ==, question: question, in: context)
+        return comparePredicateToKey(predicate: p, f: ==, question: question, given: facts)
 
     case .comparison(.predicate(let p), .isNotEqualTo, .question(let question)),
          .comparison(.question(let question), .isNotEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: !=, question: question, in: context)
+        return comparePredicateToKey(predicate: p, f: !=, question: question, given: facts)
 
     case .comparison(.question(let lhs), let op, .question(let rhs)):
-        return compareKeyToKey(lhs: lhs, op: op, rhs: rhs, in: context)
+        return compareKeyToKey(lhs: lhs, op: op, rhs: rhs, given: facts)
 
     case .comparison(.question(let question), let op, .value(let value)):
-        return compareKeyToValue(question: question, op: op, value: value, in: context)
+        return compareKeyToValue(question: question, op: op, value: value, given: facts)
 
     case .comparison(.value(let value), let op, .question(let question)):
-        return compareKeyToValue(question: question, op: op.swapped, value: value, in: context)
+        return compareKeyToValue(question: question, op: op.swapped, value: value, given: facts)
 
     case .comparison(.value(let lhs), let op, .value(let rhs)):
         return compareValueToValue(lhs: lhs, op: op, rhs: rhs, match: [])

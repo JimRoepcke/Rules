@@ -44,7 +44,7 @@ class FactsTests: QuickSpec {
 
                 let result = Fns.ask(
                     question: "missing",
-                    in: .mockf(),
+                    given: .mockf(),
                     onFailure: onF,
                     onSuccess: onS
                 )
