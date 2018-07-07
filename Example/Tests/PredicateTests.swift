@@ -318,17 +318,17 @@ class PredicateTests: QuickSpec {
                     expect(predicate) == .success(.and([.true, .true]))
                 }
 
-                it("can convert someKey == 'someValue' AND TRUEPREDICATE") {
-                    let sut = "someKey == 'someValue' AND TRUEPREDICATE"
+                it("can convert someQuestion == 'someAnswer' AND TRUEPREDICATE") {
+                    let sut = "someQuestion == 'someAnswer' AND TRUEPREDICATE"
                     let ns = parse(format: sut)
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .and(
                             [
                                 .comparison(
-                                    lhs: .question(.init(identifier: "someKey")),
+                                    lhs: .question(.init(identifier: "someQuestion")),
                                     op: .isEqualTo,
-                                    rhs: .value(.string("someValue"))
+                                    rhs: .value(.string("someAnswer"))
                                 ),
                                 .true
                             ]
@@ -336,52 +336,52 @@ class PredicateTests: QuickSpec {
                     )
                 }
 
-                it("can convert someKey == -42") {
-                    let sut = "someKey == -42"
+                it("can convert someQuestion == -42") {
+                    let sut = "someQuestion == -42"
                     let ns = parse(format: sut)
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .question(.init(identifier: "someKey")),
+                            lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
                             rhs: .value(.int(-42))
                         )
                     )
                 }
 
-                it("can convert someKey == false") {
-                    let sut = "someKey == false"
+                it("can convert someQuestion == false") {
+                    let sut = "someQuestion == false"
                     let ns = parse(format: sut)
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .question(.init(identifier: "someKey")),
+                            lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
                             rhs: .predicate(.false)
                         )
                     )
                 }
 
-                it("can convert someKey == true") {
-                    let sut = "someKey == true"
+                it("can convert someQuestion == true") {
+                    let sut = "someQuestion == true"
                     let ns = parse(format: sut)
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .question(.init(identifier: "someKey")),
+                            lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
                             rhs: .predicate(.true)
                         )
                     )
                 }
 
-                it("can convert someKey == 2.5") {
-                    let sut = "someKey == 2.5"
+                it("can convert someQuestion == 2.5") {
+                    let sut = "someQuestion == 2.5"
                     let ns = parse(format: sut)
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .question(.init(identifier: "someKey")),
+                            lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
                             rhs: .value(.double(2.5))
                         )
