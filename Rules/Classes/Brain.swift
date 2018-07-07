@@ -34,7 +34,7 @@ public class Brain {
         rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
     }
 
-    typealias Candidate = (rule: Rule, match: Predicate.Dependencies)
+    typealias Candidate = (rule: Rule, dependencies: Predicate.Dependencies)
 
     func candidates(for question: Facts.Question, given facts: Facts) -> [Candidate] {
         var results: [Candidate] = []
@@ -52,8 +52,8 @@ public class Brain {
             let maxSize = rulesSortedBySize.first?.predicate.size
             for rule in rulesSortedBySize {
                 if rule.predicate.size == maxSize || results.isEmpty {
-                    if let match = rule.predicate.matches(given: facts) {
-                        results.append((rule, match))
+                    if let dependencies = rule.predicate.matches(given: facts) {
+                        results.append((rule, dependencies))
                     }
                 } else if !results.isEmpty {
                     break
@@ -108,7 +108,7 @@ public class Brain {
         case .success(let candidate):
             return candidate
                 .rule
-                .fire(given: facts, match: candidate.match)
+                .fire(given: facts, match: candidate.dependencies)
                 .bimap(Facts.AnswerError.firingFailed, Rules.id)
         }
     }
