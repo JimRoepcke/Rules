@@ -319,11 +319,11 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, questi
         switch result {
         case .failed(let answerError):
             return .failed(.keyEvaluationFailed(answerError))
-        case .success(.bool(let bool, let match)):
+        case .success(.bool(let bool, let dependencies)):
             return .success(
                 .init(
                     value: f(pResult.value, bool),
-                    dependencies: match.union(pResult.dependencies).union([question])
+                    dependencies: dependencies.union(pResult.dependencies).union([question])
                 )
             )
         case .success:
@@ -384,23 +384,23 @@ func compareQuestionToValue(question: Facts.Question, op: Predicate.ComparisonOp
         return .failed(.keyEvaluationFailed(answerError))
     case .success(let answer):
         return answer.asPredicateValue()
-            .map { compareValueToValue(lhs: $0, op: op, rhs: value, match: answer.dependencies.union([question])) }
+            .map { compareValueToValue(lhs: $0, op: op, rhs: value, dependencies: answer.dependencies.union([question])) }
             ?? .failed(.typeMismatch)
     }
 }
 
-func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, match: Set<Facts.Question>) -> Predicate.EvaluationResult {
+func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, dependencies: Set<Facts.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case (.int(let lhs), .int(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), dependencies: match))
+        return .success(.init(value: op.compare(lhs, rhs), dependencies: dependencies))
     case (.double(let lhs), .double(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), dependencies: match))
+        return .success(.init(value: op.compare(lhs, rhs), dependencies: dependencies))
     case (.string(let lhs), .string(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), dependencies: match))
+        return .success(.init(value: op.compare(lhs, rhs), dependencies: dependencies))
     case (.int(let lhs), .double(let rhs)):
-        return .success(.init(value: op.compare(Double(lhs), rhs), dependencies: match))
+        return .success(.init(value: op.compare(Double(lhs), rhs), dependencies: dependencies))
     case (.double(let lhs), .int(let rhs)):
-        return .success(.init(value: op.compare(lhs, Double(rhs)), dependencies: match))
+        return .success(.init(value: op.compare(lhs, Double(rhs)), dependencies: dependencies))
     default:
         return .failed(.typeMismatch)
     }
@@ -451,7 +451,7 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
         return compareQuestionToValue(question: question, op: op.swapped, value: value, given: facts)
 
     case .comparison(.value(let lhs), let op, .value(let rhs)):
-        return compareValueToValue(lhs: lhs, op: op, rhs: rhs, match: [])
+        return compareValueToValue(lhs: lhs, op: op, rhs: rhs, dependencies: [])
     }
 }
 

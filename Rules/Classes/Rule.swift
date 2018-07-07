@@ -150,7 +150,7 @@ func parse(humanRule: String) -> RuleParsingResult {
                 predicate: predicate,
                 question: .init(identifier: question),
                 answer: .string(answer), // TODO: support other types
-                assignment: { rule, _, match in .success(rule.answer.asAnswerWithDependencies(match)) }
+                assignment: { rule, _, dependencies in .success(rule.answer.asAnswerWithDependencies(dependencies)) }
             )
         )
     }
