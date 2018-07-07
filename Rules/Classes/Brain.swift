@@ -4,6 +4,10 @@
 //  License: MIT, included below
 //
 
+/// A `Brain` can evaluate `Rule`s to infer answers to questions
+/// that are not explicitly known in the collection of `Facts`.
+///
+/// Instances of `Brain` are **not** thread-safe.
 public class Brain {
 
     public init() {
@@ -14,8 +18,11 @@ public class Brain {
         self.rules = other.rules
     }
 
+    /// The `rules` used to infer answers to questions
     var rules: [Facts.Question: [Int: [Rule]]]
 
+    /// Adds a rule to the `Brain`.
+    /// This method is not thread-safe.
     public func add(rule: Rule) {
         // TODO: don't add the rule if it's already added - need the fingerprint for this
         rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
