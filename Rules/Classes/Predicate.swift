@@ -302,25 +302,23 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
 
 /// only succeeds if the question evaluates to a boolean answer
 /// otherwise, .failed(.typeMismatch)
-func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
-    let pResult = evaluate(predicate: predicate, given: facts)
-    switch pResult {
-    case .failed: return pResult
-    case .success(let pResult):
-        let result = facts[question]
-        switch result {
-        case .failed(let answerError):
-            return .failed(.questionEvaluationFailed(answerError))
-        case .success(.bool(let bool, let dependencies)):
-            return .success(
-                .init(
-                    value: f(pResult.value, bool),
-                    dependencies: dependencies.union(pResult.dependencies).union([question])
-                )
-            )
-        case .success:
-            return .failed(.typeMismatch)
-        }
+func comparePredicateToQuestion(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
+    let predicateEvaluationResult = evaluate(predicate: predicate, given: facts)
+    guard case let .success(predicateEvaluation) = predicateEvaluationResult else {
+        return predicateEvaluationResult
+    }
+    let result = facts[question]
+    switch result {
+    case .failed(let answerError):
+        return .failed(.questionEvaluationFailed(answerError))
+    case .success(.bool(let questionAnswerValue, let questionDependencies)):
+        let evaluationValue = f(predicateEvaluation.value, questionAnswerValue)
+        let evaluationDependencies = questionDependencies
+            .union(predicateEvaluation.dependencies)
+            .union([question])
+        return .success(.init(value: evaluationValue, dependencies: evaluationDependencies))
+    case .success:
+        return .failed(.typeMismatch)
     }
 }
 
@@ -427,11 +425,11 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
 
     case .comparison(.predicate(let p), .isEqualTo, .question(let question)),
          .comparison(.question(let question), .isEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: ==, question: question, given: facts)
+        return comparePredicateToQuestion(predicate: p, f: ==, question: question, given: facts)
 
     case .comparison(.predicate(let p), .isNotEqualTo, .question(let question)),
          .comparison(.question(let question), .isNotEqualTo, .predicate(let p)):
-        return comparePredicateToKey(predicate: p, f: !=, question: question, given: facts)
+        return comparePredicateToQuestion(predicate: p, f: !=, question: question, given: facts)
 
     case .comparison(.question(let lhs), let op, .question(let rhs)):
         return compareQuestionToQuestion(lhs: lhs, op: op, rhs: rhs, given: facts)

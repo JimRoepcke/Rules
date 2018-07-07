@@ -36,11 +36,11 @@ public class Brain {
 
     typealias Candidate = (rule: Rule, dependencies: Facts.Dependencies)
 
-    typealias CandidatesResult = Rules.Result<Predicate.EvaluationError, [Candidate]>
+    typealias CandidatesResult = Rules.Result<Facts.AnswerError, [Candidate]>
 
     func candidates(for question: Facts.Question, given facts: Facts) -> CandidatesResult {
         guard let rulesForQuestion = rules[question] else {
-            return .failed(.questionEvaluationFailed(.noRuleFound(question: question)))
+            return .failed(.noRuleFound(question: question))
         }
         var candidates: [Candidate] = []
         let priorities = rulesForQuestion.keys.sorted(by: >)
@@ -57,7 +57,7 @@ public class Brain {
                     let evaluationResult = rule.predicate.matches(given: facts)
                     switch evaluationResult {
                     case .failed(let error):
-                        return .failed(error)
+                        return .failed(.candidateEvaluationFailed(error))
                     case .success(let evaluation) where evaluation.value:
                         candidates.append((rule, evaluation.dependencies))
                     case .success:
@@ -112,7 +112,7 @@ public class Brain {
         let candidateRulesResult = candidates(for: question, given: facts)
         switch candidateRulesResult {
         case .failed(let error):
-            return .failed(.candidateEvaluationFailed(error))
+            return .failed(error)
         case .success(let candidateRules):
             let chosenCandidateResult = chooseRule(for: question, amongst: candidateRules)
             switch chosenCandidateResult {

@@ -24,6 +24,17 @@
 /// invalidates its memory (cache) when dependencies change.
 public class Facts {
 
+    /// Generates inferred facts via `Rule`s.
+    public let brain: Brain
+
+    public init(brain: Brain) {
+        self.brain = brain
+        self.known = [:]
+        self.inferred = [:]
+        self.dependencies = [:]
+    }
+
+    /// This is basically a `String`, but it's more type-safe.
     public struct Question: Hashable, Codable, ExpressibleByStringLiteral {
         public let identifier: String
 
@@ -48,6 +59,9 @@ public class Facts {
         }
     }
 
+    /// A value that is provided to `Facts` either by:
+    /// - the client of `Facts` as the answer to a question with a known fact
+    /// - the receiver's `Brain` as the answer to a question with an inferred fact.
     public enum Answer: Equatable {
         case bool(Bool)
         case double(Double)
@@ -68,8 +82,10 @@ public class Facts {
         }
     }
 
+    /// The questions asked while determining the answer to a question.
     public typealias Dependencies = Set<Question>
 
+    /// Associates an answer with the questions that answer depended on.
     public enum AnswerWithDependencies: Equatable {
         case bool(Bool, dependencies: Dependencies)
         case double(Double, dependencies: Dependencies)
@@ -95,8 +111,6 @@ public class Facts {
         }
     }
 
-    public let brain: Brain
-
     var known: [Question: AnswerWithDependencies]
     var inferred: [Question: AnswerWithDependencies]
 
@@ -107,13 +121,6 @@ public class Facts {
     /// invalidated. That is, the question:answer relationship here is
     /// depended-on:depending-on.
     var dependencies: [Question: Dependencies]
-
-    public init(brain: Brain) {
-        self.brain = brain
-        self.known = [:]
-        self.inferred = [:]
-        self.dependencies = [:]
-    }
 
     public func know(answer: Answer, forQuestion question: Question) {
         known[question] = answer.asAnswerWithDependencies()
@@ -131,6 +138,8 @@ public class Facts {
         return answer
     }
 
+    /// If an `Answer` cannot be provided for a question, an `AnswerError` is
+    /// provided instead.
     public enum AnswerError: Swift.Error, Equatable {
         indirect case candidateEvaluationFailed(Predicate.EvaluationError)
         case noRuleFound(question: Question)
