@@ -18,8 +18,8 @@ extension Brain {
 }
 
 extension Facts {
-    static func mockf(engine: Brain = .mockf()) -> Facts {
-        return .init(engine: engine)
+    static func mockf(brain: Brain = .mockf()) -> Facts {
+        return .init(brain: brain)
     }
 }
 

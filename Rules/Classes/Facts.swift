@@ -93,7 +93,7 @@ public class Facts {
         }
     }
 
-    public let engine: Brain
+    public let brain: Brain
 
     var known: [Question: AnswerWithDependencies]
     var inferred: [Question: AnswerWithDependencies]
@@ -106,8 +106,8 @@ public class Facts {
     /// depended-on:dependent-keys.
     var dependencies: [Question: Set<Question>]
 
-    public init(engine: Brain) {
-        self.engine = engine
+    public init(brain: Brain) {
+        self.brain = brain
         self.known = [:]
         self.inferred = [:]
         self.dependencies = [:]
@@ -180,7 +180,7 @@ enum FactsFunctions {
         onSuccess: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
         ) -> AnswerWithDependenciesResult {
         return context
-            .engine
+            .brain
             .ask(question: question, in: context)
             .bimap(onFailure, onSuccess)
     }
