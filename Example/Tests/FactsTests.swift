@@ -10,7 +10,7 @@ import Nimble
 @testable import Rules
 
 extension Facts.AnswerError {
-    static let mock: Facts.AnswerError = .noRuleFound(question: "key")
+    static let mock: Facts.AnswerError = .noRuleFound(question: "aQuestion")
 }
 
 extension Brain {

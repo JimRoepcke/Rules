@@ -251,7 +251,7 @@ class PredicateTests: QuickSpec {
                     expect(result) == trueNoKeys
                 }
 
-                it("can check equality of the same key") {
+                it("can check equality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
@@ -259,7 +259,7 @@ class PredicateTests: QuickSpec {
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
 
-                it("can check inequality of the same key") {
+                it("can check inequality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isNotEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
@@ -276,7 +276,7 @@ class PredicateTests: QuickSpec {
                     expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"]))
                 }
 
-                it("can compare a key to a value") {
+                it("can compare a question to a value") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .value(.int(0)))
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
@@ -284,7 +284,7 @@ class PredicateTests: QuickSpec {
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
 
-                it("can compare a predicate to a key") {
+                it("can compare a predicate to a question") {
                     let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
                     facts.know(answer: .bool(true), forQuestion: "test")

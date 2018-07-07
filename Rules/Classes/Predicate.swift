@@ -93,7 +93,7 @@ extension Predicate.Expression: Codable {
         } else if container.contains(.predicate) {
             self = .predicate(try container.decode(Predicate.self, forKey: .predicate))
         } else {
-            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the JSON object: 'question', 'value' 'predicate'"))
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Predicate.Expression JSON object: 'question', 'value' 'predicate'"))
         }
     }
 
@@ -125,7 +125,7 @@ extension Predicate.Value: Codable {
         } else if container.contains(.string) {
             self = .string(try container.decode(String.self, forKey: .string))
         } else {
-            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "no int, double or string key"))
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Predicate.Value JSON object: ' 'int', 'double', 'string'"))
         }
     }
 

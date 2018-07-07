@@ -21,13 +21,15 @@ class RuleTests: QuickSpec {
             describe("parse(humanRule:)") {
 
                 it("parses?") {
-                    let sut = "10: TRUEPREDICATE => key = value [assignment]"
+                    let sut = "10: TRUEPREDICATE => question = answer"
                     let rule = parse(humanRule: sut)
                     switch rule {
                     case .failed(let error): fail("\(error)")
                     case .success(let rule):
                         expect(rule.priority) == 10
                         expect(rule.predicate) == .true
+                        expect(rule.question) == "question"
+                        expect(rule.answer) == .string("answer")
                     }
                 }
             }
