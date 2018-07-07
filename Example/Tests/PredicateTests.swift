@@ -257,7 +257,6 @@ class PredicateTests: QuickSpec {
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, keys: ["test"]))
-                    // this answer will be true even if the value changes, so no dependent keys
                 }
 
                 it("can check inequality of the same key") {
@@ -266,7 +265,6 @@ class PredicateTests: QuickSpec {
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: false, keys: ["test"]))
-                    // this answer will be false even if the value changes, so no dependent keys
                 }
 
                 it("can check equality of different keys") {
@@ -276,7 +274,6 @@ class PredicateTests: QuickSpec {
                     facts.know(answer: .int(1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: false, keys: ["test1", "test2"]))
-                    // this answer will be true even if the value changes, so no dependent keys
                 }
 
                 it("can compare a key to a value") {

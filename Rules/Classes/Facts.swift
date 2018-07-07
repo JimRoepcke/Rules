@@ -103,7 +103,7 @@ public class Facts {
     /// `Question` changes in `known`, all pairs in `inferred` keyed by members
     /// of the associated `[Question]` value of this dictionary must be
     /// invalidated. That is, the question:answer relationship here is
-    /// depended-on:dependent-keys.
+    /// depended-on:depending-on.
     var dependencies: [Question: Set<Question>]
 
     public init(brain: Brain) {

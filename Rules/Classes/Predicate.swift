@@ -353,12 +353,12 @@ func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonO
     }
 }
 
-// only succeeds if both keys evaluate to the "same" type
+// only succeeds if both questions evaluate to the "same" type
 // otherwise, .failed(.typeMismatch)
-// if both keys evaluate to boolean values
+// if both questions evaluate to boolean values
 //   only succeeds if the op is == or !=
 //   otherwise .failed(.predicatesAreOnlyEquatableNotComparable)
-func compareKeyToKey(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
+func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
     let lhsResult = facts[lhs]
     switch lhsResult {
     case .failed(let answerError):
@@ -377,7 +377,7 @@ func compareKeyToKey(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs:
 // only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
 // if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareKeyToValue(question: Facts.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, given facts: Facts) -> Predicate.EvaluationResult {
+func compareQuestionToValue(question: Facts.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, given facts: Facts) -> Predicate.EvaluationResult {
     let answerResult = facts[question]
     switch answerResult {
     case .failed(let answerError):
@@ -442,13 +442,13 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
         return comparePredicateToKey(predicate: p, f: !=, question: question, given: facts)
 
     case .comparison(.question(let lhs), let op, .question(let rhs)):
-        return compareKeyToKey(lhs: lhs, op: op, rhs: rhs, given: facts)
+        return compareQuestionToQuestion(lhs: lhs, op: op, rhs: rhs, given: facts)
 
     case .comparison(.question(let question), let op, .value(let value)):
-        return compareKeyToValue(question: question, op: op, value: value, given: facts)
+        return compareQuestionToValue(question: question, op: op, value: value, given: facts)
 
     case .comparison(.value(let value), let op, .question(let question)):
-        return compareKeyToValue(question: question, op: op.swapped, value: value, given: facts)
+        return compareQuestionToValue(question: question, op: op.swapped, value: value, given: facts)
 
     case .comparison(.value(let lhs), let op, .value(let rhs)):
         return compareValueToValue(lhs: lhs, op: op, rhs: rhs, match: [])
