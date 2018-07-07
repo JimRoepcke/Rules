@@ -108,7 +108,7 @@ public class Brain {
         case .success(let candidate):
             return candidate
                 .rule
-                .fire(given: facts, match: candidate.dependencies)
+                .fire(given: facts, dependencies: candidate.dependencies)
                 .bimap(Facts.AnswerError.firingFailed, Rules.id)
         }
     }
