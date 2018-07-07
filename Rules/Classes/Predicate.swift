@@ -56,13 +56,13 @@ public enum Predicate: Equatable {
 
     public struct Evaluation: Equatable {
         public let value: Bool
-        public let keys: Set<Facts.Question>
+        public let dependencies: Set<Facts.Question>
 
-        public static let `false` = Evaluation(value: false, keys: [])
-        public static let `true` = Evaluation(value: true, keys: [])
+        public static let `false` = Evaluation(value: false, dependencies: [])
+        public static let `true` = Evaluation(value: true, dependencies: [])
 
         public static func invert(_ result: Evaluation) -> Evaluation {
-            return .init(value: !result.value, keys: result.keys)
+            return .init(value: !result.value, dependencies: result.dependencies)
         }
     }
 
@@ -78,7 +78,7 @@ public enum Predicate: Equatable {
         case .failed:
             return nil // TODO: this should be returning the error
         case .success(let result):
-            return result.keys
+            return result.dependencies
         }
     }
 
@@ -271,20 +271,20 @@ extension Facts.AnswerWithDependencies {
 ///   - facts: the `Facts` to look up `questions`s from.
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
 func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Bool) -> Predicate.EvaluationResult {
-    var keys: Set<Facts.Question> = []
+    var dependencies: Set<Facts.Question> = []
     for predicate in predicates {
         let result = evaluate(predicate: predicate, given: facts)
         switch result {
         case .failed:
             return result
         case let .success(result):
-            keys.formUnion(result.keys)
+            dependencies.formUnion(result.dependencies)
             if result.value == identity {
-                return .success(.init(value: identity, keys: keys))
+                return .success(.init(value: identity, dependencies: dependencies))
             }
         }
     }
-    return .success(.init(value: !identity, keys: keys))
+    return .success(.init(value: !identity, dependencies: dependencies))
 }
 
 func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, given facts: Facts) -> Predicate.EvaluationResult {
@@ -301,7 +301,7 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
             return .success(
                 .init(
                     value: f(lhsResult.value, rhsResult.value),
-                    keys: lhsResult.keys.union(rhsResult.keys)
+                    dependencies: lhsResult.dependencies.union(rhsResult.dependencies)
                 )
             )
         }
@@ -323,7 +323,7 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, questi
             return .success(
                 .init(
                     value: f(pResult.value, bool),
-                    keys: match.union(pResult.keys).union([question])
+                    dependencies: match.union(pResult.dependencies).union([question])
                 )
             )
         case .success:
@@ -332,22 +332,22 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, questi
     }
 }
 
-func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Facts.AnswerWithDependencies, keys: Set<Facts.Question>) -> Predicate.EvaluationResult {
+func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Facts.AnswerWithDependencies, dependencies: Set<Facts.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case let (.bool(lhsValue, lhsMatch), .bool(rhsValue, rhsMatch)):
         return op.same(lhsValue, rhsValue)
-            .map { .success(.init(value: $0, keys: lhsMatch.union(rhsMatch).union(keys))) }
+            .map { .success(.init(value: $0, dependencies: lhsMatch.union(rhsMatch).union(dependencies))) }
             ?? .failed(.predicatesAreOnlyEquatableNotComparable)
     case let (.int(lhsValue, lhsMatch), .int(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, rhsValue), keys: lhsMatch.union(rhsMatch).union(keys)))
+        return .success(.init(value: op.compare(lhsValue, rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
     case let (.double(lhsValue, lhsMatch), .double(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, rhsValue), keys: lhsMatch.union(rhsMatch).union(keys)))
+        return .success(.init(value: op.compare(lhsValue, rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
     case let (.string(lhsValue, lhsMatch), .string(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, rhsValue), keys: lhsMatch.union(rhsMatch).union(keys)))
+        return .success(.init(value: op.compare(lhsValue, rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
     case let (.int(lhsValue, lhsMatch), .double(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(Double(lhsValue), rhsValue), keys: lhsMatch.union(rhsMatch).union(keys)))
+        return .success(.init(value: op.compare(Double(lhsValue), rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
     case let (.double(lhsValue, lhsMatch), .int(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, Double(rhsValue)), keys: lhsMatch.union(rhsMatch).union(keys)))
+        return .success(.init(value: op.compare(lhsValue, Double(rhsValue)), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
     default:
         return .failed(.typeMismatch)
     }
@@ -369,7 +369,7 @@ func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOper
         case .failed(let answerError):
             return .failed(.keyEvaluationFailed(answerError))
         case .success(let rhsAnswer):
-            return compareAnswers(lhs: lhsAnswer, op: op, rhs: rhsAnswer, keys: [lhs, rhs])
+            return compareAnswers(lhs: lhsAnswer, op: op, rhs: rhsAnswer, dependencies: [lhs, rhs])
         }
     }
 }
@@ -392,15 +392,15 @@ func compareQuestionToValue(question: Facts.Question, op: Predicate.ComparisonOp
 func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, match: Set<Facts.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case (.int(let lhs), .int(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), keys: match))
+        return .success(.init(value: op.compare(lhs, rhs), dependencies: match))
     case (.double(let lhs), .double(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), keys: match))
+        return .success(.init(value: op.compare(lhs, rhs), dependencies: match))
     case (.string(let lhs), .string(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), keys: match))
+        return .success(.init(value: op.compare(lhs, rhs), dependencies: match))
     case (.int(let lhs), .double(let rhs)):
-        return .success(.init(value: op.compare(Double(lhs), rhs), keys: match))
+        return .success(.init(value: op.compare(Double(lhs), rhs), dependencies: match))
     case (.double(let lhs), .int(let rhs)):
-        return .success(.init(value: op.compare(lhs, Double(rhs)), keys: match))
+        return .success(.init(value: op.compare(lhs, Double(rhs)), dependencies: match))
     default:
         return .failed(.typeMismatch)
     }

@@ -112,11 +112,11 @@ class PredicateTests: QuickSpec {
             describe("evaluation") {
 
                 var falseNoKeys: SUT.EvaluationResult {
-                    return .success(.init(value: false, keys: []))
+                    return .success(.init(value: false, dependencies: []))
                 }
 
                 var trueNoKeys: SUT.EvaluationResult {
-                    return .success(.init(value: true, keys: []))
+                    return .success(.init(value: true, dependencies: []))
                 }
 
                 it("returns false for .false") {
@@ -256,7 +256,7 @@ class PredicateTests: QuickSpec {
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
-                    expect(result) == .success(.init(value: true, keys: ["test"]))
+                    expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
 
                 it("can check inequality of the same key") {
@@ -264,16 +264,16 @@ class PredicateTests: QuickSpec {
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
-                    expect(result) == .success(.init(value: false, keys: ["test"]))
+                    expect(result) == .success(.init(value: false, dependencies: ["test"]))
                 }
 
-                it("can check equality of different keys") {
+                it("can check equality of different dependencies") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test1")), op: .isEqualTo, rhs: .question(.init(identifier: "test2")))
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test1")
                     facts.know(answer: .int(1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, given: facts)
-                    expect(result) == .success(.init(value: false, keys: ["test1", "test2"]))
+                    expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"]))
                 }
 
                 it("can compare a key to a value") {
@@ -281,7 +281,7 @@ class PredicateTests: QuickSpec {
                     let facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
-                    expect(result) == .success(.init(value: true, keys: ["test"]))
+                    expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
 
                 it("can compare a predicate to a key") {
@@ -289,7 +289,7 @@ class PredicateTests: QuickSpec {
                     let facts = Facts.mockf()
                     facts.know(answer: .bool(true), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
-                    expect(result) == .success(.init(value: true, keys: ["test"]))
+                    expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
             }
 
