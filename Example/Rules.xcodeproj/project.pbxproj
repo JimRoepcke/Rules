@@ -14,7 +14,7 @@
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
 		607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDE1AFB9204008FA782 /* LaunchScreen.xib */; };
-		607FACEC1AFB9204008FA782 /* ContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* ContextTests.swift */; };
+		607FACEC1AFB9204008FA782 /* FactsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* FactsTests.swift */; };
 		68D841846BDCB272855E9A75 /* Pods_Rules_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4618D76955E7F156F678EF7A /* Pods_Rules_Tests.framework */; };
 		CCDFC7B874D32CB4D0016601 /* Pods_Rules_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 003F295B1317ED2C6AF9F1D9 /* Pods_Rules_Example.framework */; };
 /* End PBXBuildFile section */
@@ -45,7 +45,7 @@
 		607FACDF1AFB9204008FA782 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
 		607FACE51AFB9204008FA782 /* Rules_Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Rules_Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACEA1AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		607FACEB1AFB9204008FA782 /* ContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextTests.swift; sourceTree = "<group>"; };
+		607FACEB1AFB9204008FA782 /* FactsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FactsTests.swift; sourceTree = "<group>"; };
 		78E9EC108BA194B5EEC55BD1 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		9DAA9F187E0457D126D84FE1 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		B43EF3C700A3B7C239F3D05E /* Pods-Rules_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Rules_Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-Rules_Example/Pods-Rules_Example.release.xcconfig"; sourceTree = "<group>"; };
@@ -119,7 +119,7 @@
 		607FACE81AFB9204008FA782 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				607FACEB1AFB9204008FA782 /* ContextTests.swift */,
+				607FACEB1AFB9204008FA782 /* FactsTests.swift */,
 				380088CC20EAF2EB006AA5E2 /* PredicateTests.swift */,
 				380088CE20EBD1EF006AA5E2 /* RuleTests.swift */,
 				607FACE91AFB9204008FA782 /* Supporting Files */,
@@ -359,7 +359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				380088CF20EBD1EF006AA5E2 /* RuleTests.swift in Sources */,
-				607FACEC1AFB9204008FA782 /* ContextTests.swift in Sources */,
+				607FACEC1AFB9204008FA782 /* FactsTests.swift in Sources */,
 				380088CD20EAF2EB006AA5E2 /* PredicateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
