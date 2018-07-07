@@ -8,8 +8,6 @@ public enum Predicate: Equatable {
 
     public typealias EvaluationResult = Rules.Result<Predicate.EvaluationError, Predicate.Evaluation>
 
-    public typealias Dependencies = Set<Facts.Question>
-
     case `false`
     case `true`
     indirect case not(Predicate)
@@ -72,7 +70,7 @@ public enum Predicate: Equatable {
         case keyEvaluationFailed(Facts.AnswerError)
     }
 
-    public func matches(given facts: Facts) -> Dependencies? { // TODO: change this to return a `Rules.Result`
+    public func matches(given facts: Facts) -> Facts.Dependencies? { // TODO: change this to return a `Rules.Result`
         let evaluation = evaluate(predicate: self, given: facts)
         switch evaluation {
         case .failed:

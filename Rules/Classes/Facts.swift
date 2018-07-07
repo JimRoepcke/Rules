@@ -54,7 +54,7 @@ public class Facts {
         case int(Int)
         case string(String)
 
-        func asAnswerWithDependencies(_ dependencies: Set<Question> = []) -> AnswerWithDependencies {
+        func asAnswerWithDependencies(_ dependencies: Dependencies = []) -> AnswerWithDependencies {
             switch self {
             case let .bool(it): return .bool(it, dependencies: dependencies)
             case let .double(it): return .double(it, dependencies: dependencies)
@@ -68,11 +68,13 @@ public class Facts {
         }
     }
 
+    public typealias Dependencies = Set<Question>
+
     public enum AnswerWithDependencies: Equatable {
-        case bool(Bool, dependencies: Set<Question>)
-        case double(Double, dependencies: Set<Question>)
-        case int(Int, dependencies: Set<Question>)
-        case string(String, dependencies: Set<Question>)
+        case bool(Bool, dependencies: Dependencies)
+        case double(Double, dependencies: Dependencies)
+        case int(Int, dependencies: Dependencies)
+        case string(String, dependencies: Dependencies)
 
         var answer: Answer {
             switch self {
@@ -83,7 +85,7 @@ public class Facts {
             }
         }
 
-        var dependencies: Set<Question> {
+        var dependencies: Dependencies {
             switch self {
             case .bool(_, let it): return it
             case .double(_, let it): return it
@@ -104,7 +106,7 @@ public class Facts {
     /// of the associated `[Question]` value of this dictionary must be
     /// invalidated. That is, the question:answer relationship here is
     /// depended-on:depending-on.
-    var dependencies: [Question: Set<Question>]
+    var dependencies: [Question: Dependencies]
 
     public init(brain: Brain) {
         self.brain = brain
