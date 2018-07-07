@@ -34,7 +34,7 @@ public class Brain {
         rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
     }
 
-    typealias Candidate = (rule: Rule, match: Predicate.Match)
+    typealias Candidate = (rule: Rule, match: Predicate.Dependencies)
 
     func candidates(for question: Facts.Question, given facts: Facts) -> [Candidate] {
         var results: [Candidate] = []

@@ -54,7 +54,7 @@ public struct Rule {
     /// TODO: this is going to change to a `String` which the `Brain` uses to look up
     /// an `Assignment` function by name. This will make it easy to make the
     /// `Rule` type `Codable` for conversion to/from JSON.
-    public typealias Assignment = (Rule, Facts, Predicate.Match) -> FiringResult
+    public typealias Assignment = (Rule, Facts, Predicate.Dependencies) -> FiringResult
 
     /// Higher priority `Rule`s have their `predicate` checked before `Rules`
     /// with lower `priority`.
@@ -85,7 +85,7 @@ public struct Rule {
 
     /// This method is going to move into `Facts` when `assignment`
     /// is changed from a function to a `String`
-    func fire(given facts: Facts, match: Predicate.Match) -> FiringResult {
+    func fire(given facts: Facts, match: Predicate.Dependencies) -> FiringResult {
         return assignment(self, facts, match)
     }
 }
