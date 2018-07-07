@@ -1,16 +1,16 @@
 //
-//  Engine.swift
+//  Brain.swift
 //  Rules
 //  License: MIT, included below
 //
 
-public class Engine {
+public class Brain {
 
     public init() {
         self.rules = [:]
     }
 
-    var rules: [Context.Question: [Int: [Rule]]]
+    var rules: [Facts.Question: [Int: [Rule]]]
 
     public func add(rule: Rule) {
         // TODO: don't add the rule if it's already added - need the fingerprint for this
@@ -19,7 +19,7 @@ public class Engine {
 
     typealias Candidate = (rule: Rule, match: Predicate.Match)
 
-    func candidates(for question: Context.Question, in context: Context) -> [Candidate] {
+    func candidates(for question: Facts.Question, in context: Facts) -> [Candidate] {
         var results: [Candidate] = []
         guard let rulesForKey = rules[question] else {
             return []
@@ -52,7 +52,7 @@ public class Engine {
     }
 
     /// only called when `context` has no stored or cached answer for this question
-    public func ask(question: Context.Question, in context: Context) -> AnswerWithDependenciesResult {
+    public func ask(question: Facts.Question, in context: Facts) -> AnswerWithDependenciesResult {
         // find candidate rules
         let candidateRules = candidates(for: question, in: context)
         if candidateRules.isEmpty {
@@ -65,12 +65,12 @@ public class Engine {
             let candidateRule = candidateRules[0].rule
             return candidateRule
                 .fire(in: context, match: candidateRules[0].match)
-                .bimap(Context.AnswerError.firingFailed, Rules.id)
+                .bimap(Facts.AnswerError.firingFailed, Rules.id)
         }
     }
 }
 
-public typealias AnswerWithDependenciesResult = Rules.Result<Context.AnswerError, Context.AnswerWithDependencies>
+public typealias AnswerWithDependenciesResult = Rules.Result<Facts.AnswerError, Facts.AnswerWithDependencies>
 
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.

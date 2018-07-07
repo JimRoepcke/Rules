@@ -13,12 +13,12 @@
 /// _"If the LHS is true, then the RHS declares this fact."_
 ///
 /// The RHS (or right hand side) of a `Rule` declares a fact. The fact is an
-/// `answer` for a `question`. An `Engine` is used to get the `answer` of a
+/// `answer` for a `question`. An `Brain` is used to get the `answer` of a
 /// `question`.
 ///
 /// The LHS (or left hand side) of a `Rule` is comprised of two parts:
 /// - its `priority` ranks the importance of the `Rule` relative to others.
-/// - its `predicate` can be evaluated to a `Bool`, given a `Context`.
+/// - its `predicate` can be evaluated to a `Bool`, given a `Facts`.
 ///
 /// The RHS (or right hand side) of a `Rule` is comprised of three parts:
 /// - a `question`, which is the identifier for a fact.
@@ -26,15 +26,15 @@
 /// Given a set of `Rule`s with the same RHS `question`, the `Rule` that "wins"
 /// or "takes effect" or "applies" is the one with the highest `priority`
 /// amongst the subset of `Rules` whose `predicate` evaluates to `true` in a
-/// given `Context`.
+/// given `Facts`.
 ///
-/// When a rule takes effect, the fact it declared is cached in the `Context`.
-/// The `Context` knows which other values were considered 
+/// When a rule takes effect, the fact it declared is cached in the `Facts`.
+/// The `Facts` knows which other values were considered 
 ///
 /// - note: a `Rule` is invalid if its `predicate` contains its `question`.
 public struct Rule {
 
-    /// If an `Assignment` cannot provide a `Context.AnswerWithDependencies`, it
+    /// If an `Assignment` cannot provide a `Facts.AnswerWithDependencies`, it
     /// returns one of these cases.
     public enum FiringError: Swift.Error, Equatable {
         /// An unexpected error occurred.
@@ -46,30 +46,30 @@ public struct Rule {
         case invalidRHSValue(debugDescription: String, value: Predicate.Value)
     }
 
-    public typealias FiringResult = Rules.Result<FiringError, Context.AnswerWithDependencies>
+    public typealias FiringResult = Rules.Result<FiringError, Facts.AnswerWithDependencies>
 
-    /// TODO: this is going to change to a `String` which the `Engine` uses to look up
+    /// TODO: this is going to change to a `String` which the `Brain` uses to look up
     /// an `Assignment` function by name. This will make it easy to make the
     /// `Rule` type `Codable` for conversion to/from JSON.
-    public typealias Assignment = (Rule, Context, Predicate.Match) -> FiringResult
+    public typealias Assignment = (Rule, Facts, Predicate.Match) -> FiringResult
 
     /// Higher priority `Rule`s have their `predicate` checked before `Rules`
     /// with lower `priority`.
     /// The RHS of a higher `priority` `Rule` that matches the current state of
-    /// the `Context` overrides lower-`priority` rules.
+    /// the `Facts` overrides lower-`priority` rules.
     public let priority: Int
 
     /// The LHS condition of the `Rule`. A `Rule`'s RHS only applies if its
-    /// `predicate` matches the current state of the `Context`.
+    /// `predicate` matches the current state of the `Facts`.
     ///
     /// - note: The predicate can include comparison against other questions
-    ///         whose values are not stored in the `Context`. The answer to
+    ///         whose values are not stored in the `Facts`. The answer to
     ///         those questions will be determined recursively.
     public let predicate: Predicate
 
     /// The RHS `question` is the identifier which the `RHS` `answer` is
     /// associated with.
-    public let question: Context.Question
+    public let question: Facts.Question
 
     /// Enumerates the possible `answer`s associated with a `Rule`.
     public enum Answer: Equatable {
@@ -79,18 +79,18 @@ public struct Rule {
         case string(String)
     }
 
-    /// The `Context` provides this RHS `answer` as the result of a question for
+    /// The `Facts` provides this RHS `answer` as the result of a question for
     /// this `Rule`'s RHS `question` iff this `Rule` has the highest `priority`
     /// amongst all `Rule`s for that question currently matching the state of
-    /// the `Context`.
-    public let answer: Context.Answer
+    /// the `Facts`.
+    public let answer: Facts.Answer
 
     /// the standard/default assignment will just return the `value` as is.
     public let assignment: Assignment // will change to `String`
 
-    /// This method is going to move into `Context` when `assignment`
+    /// This method is going to move into `Facts` when `assignment`
     /// is changed from a function to a `String`
-    func fire(in context: Context, match: Predicate.Match) -> FiringResult {
+    func fire(in context: Facts, match: Predicate.Match) -> FiringResult {
         return assignment(self, context, match)
     }
 }

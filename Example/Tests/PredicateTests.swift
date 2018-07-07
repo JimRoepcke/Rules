@@ -253,7 +253,7 @@ class PredicateTests: QuickSpec {
 
                 it("can check equality of the same key") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
-                    let context = Context.mockf()
+                    let context = Facts.mockf()
                     context.store(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: true, keys: ["test"]))
@@ -262,7 +262,7 @@ class PredicateTests: QuickSpec {
 
                 it("can check inequality of the same key") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isNotEqualTo, rhs: .question(.init(identifier: "test")))
-                    let context = Context.mockf()
+                    let context = Facts.mockf()
                     context.store(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: false, keys: ["test"]))
@@ -271,7 +271,7 @@ class PredicateTests: QuickSpec {
 
                 it("can check equality of different keys") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test1")), op: .isEqualTo, rhs: .question(.init(identifier: "test2")))
-                    let context = Context.mockf()
+                    let context = Facts.mockf()
                     context.store(answer: .int(0), forQuestion: "test1")
                     context.store(answer: .int(1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, in: context)
@@ -281,7 +281,7 @@ class PredicateTests: QuickSpec {
 
                 it("can compare a key to a value") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .value(.int(0)))
-                    let context = Context.mockf()
+                    let context = Facts.mockf()
                     context.store(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: true, keys: ["test"]))
@@ -289,7 +289,7 @@ class PredicateTests: QuickSpec {
 
                 it("can compare a predicate to a key") {
                     let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
-                    let context = Context.mockf()
+                    let context = Facts.mockf()
                     context.store(answer: .bool(true), forQuestion: "test")
                     let result = evaluate(predicate: sut, in: context)
                     expect(result) == .success(.init(value: true, keys: ["test"]))

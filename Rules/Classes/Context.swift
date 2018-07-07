@@ -1,10 +1,10 @@
 //
-//  Context.swift
+//  Facts.swift
 //  Rules
 //  License: MIT, included below
 //
 
-public class Context {
+public class Facts {
 
     public typealias Question = String
 
@@ -53,7 +53,7 @@ public class Context {
         }
     }
 
-    public let engine: Engine
+    public let engine: Brain
 
     var stored: [Question: AnswerWithDependencies]
     var cached: [Question: AnswerWithDependencies]
@@ -66,7 +66,7 @@ public class Context {
     /// depended-on:dependent-keys.
     var dependencies: [Question: Set<Question>]
 
-    public init(engine: Engine) {
+    public init(engine: Brain) {
         self.engine = engine
         self.stored = [:]
         self.cached = [:]
@@ -96,7 +96,7 @@ public class Context {
     }
 
     public func ask(question: Question) -> AnswerResult {
-        return self[question].bimap(Rules.id, Context.Answer.init)
+        return self[question].bimap(Rules.id, Facts.Answer.init)
     }
 
     public subscript(question: Question) -> AnswerWithDependenciesResult {
@@ -117,27 +117,27 @@ public class Context {
     }
 }
 
-public typealias AnswerResult = Rules.Result<Context.AnswerError, Context.Answer>
+public typealias AnswerResult = Rules.Result<Facts.AnswerError, Facts.Answer>
 
-typealias Fns = ContextFunctions
+typealias Fns = FactsFunctions
 
 /// Internal functions that are testable but not part of the
-/// internal API of `Context` itself
-enum ContextFunctions {
+/// internal API of `Facts` itself
+enum FactsFunctions {
 
     static func cache(
-        question: Context.Question,
-        in context: Context
-        ) -> (Context.AnswerWithDependencies) -> Context.AnswerWithDependencies
+        question: Facts.Question,
+        in context: Facts
+        ) -> (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
     {
         return { context.cache(answer: $0, forQuestion: question) }
     }
 
     static func ask(
-        question: Context.Question,
-        in context: Context,
-        onFailure: (Context.AnswerError) -> Context.AnswerError,
-        onSuccess: (Context.AnswerWithDependencies) -> Context.AnswerWithDependencies
+        question: Facts.Question,
+        in context: Facts,
+        onFailure: (Facts.AnswerError) -> Facts.AnswerError,
+        onSuccess: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
         ) -> AnswerWithDependenciesResult {
         return context
             .engine

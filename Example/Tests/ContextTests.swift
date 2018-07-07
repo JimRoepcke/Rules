@@ -1,5 +1,5 @@
 //
-//  ContextTests.swift
+//  FactsTests.swift
 //  Rules
 //  License: MIT, included below
 //
@@ -9,35 +9,35 @@ import Nimble
 
 @testable import Rules
 
-extension Context.AnswerError {
-    static let mock: Context.AnswerError = .noRuleFound(question: "key")
+extension Facts.AnswerError {
+    static let mock: Facts.AnswerError = .noRuleFound(question: "key")
 }
 
-extension Engine {
-    static let mockf: () -> Engine = Engine.init
+extension Brain {
+    static let mockf: () -> Brain = Brain.init
 }
 
-extension Context {
-    static func mockf(engine: Engine = .mockf()) -> Context {
+extension Facts {
+    static func mockf(engine: Brain = .mockf()) -> Facts {
         return .init(engine: engine)
     }
 }
 
-class ContextTests: QuickSpec {
+class FactsTests: QuickSpec {
     override func spec() {
 
-        typealias Fns = ContextFunctions
+        typealias Fns = FactsFunctions
 
-        describe("ContextFunctions") {
+        describe("FactsFunctions") {
 
             describe("lookup") {
                 var failed = false
                 var succeeded = false
-                let onF: (Context.AnswerError) -> Context.AnswerError = {
+                let onF: (Facts.AnswerError) -> Facts.AnswerError = {
                     failed = true
                     return $0
                 }
-                let onS: (Context.AnswerWithDependencies) -> Context.AnswerWithDependencies = {
+                let onS: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies = {
                     succeeded = true
                     return $0
                 }

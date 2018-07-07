@@ -8,7 +8,7 @@ public enum Predicate: Equatable {
 
     public typealias EvaluationResult = Rules.Result<Predicate.EvaluationError, Predicate.Evaluation>
 
-    public typealias Match = Set<Context.Question>
+    public typealias Match = Set<Facts.Question>
 
     case `false`
     case `true`
@@ -33,7 +33,7 @@ public enum Predicate: Equatable {
     }
 
     public struct Question: Equatable, Codable {
-        public let identifier: Context.Question
+        public let identifier: Facts.Question
     }
 
     // does not include `.bool` because `.true` and `.false` are directly in `Predicate`
@@ -60,7 +60,7 @@ public enum Predicate: Equatable {
 
     public struct Evaluation: Equatable {
         public let value: Bool
-        public let keys: Set<Context.Question>
+        public let keys: Set<Facts.Question>
 
         public static let `false` = Evaluation(value: false, keys: [])
         public static let `true` = Evaluation(value: true, keys: [])
@@ -73,10 +73,10 @@ public enum Predicate: Equatable {
     public enum EvaluationError: Error, Equatable {
         case typeMismatch
         case predicatesAreOnlyEquatableNotComparable
-        case keyEvaluationFailed(Context.AnswerError)
+        case keyEvaluationFailed(Facts.AnswerError)
     }
 
-    public func matches(in context: Context) -> Match? { // TODO: change this to return a `Rules.Result`
+    public func matches(in context: Facts) -> Match? { // TODO: change this to return a `Rules.Result`
         let evaluation = evaluate(predicate: self, in: context)
         switch evaluation {
         case .failed:
@@ -256,7 +256,7 @@ extension Predicate.ComparisonOperator {
     }
 }
 
-extension Context.AnswerWithDependencies {
+extension Facts.AnswerWithDependencies {
     /// returns `nil` for `.bool`, as that does not exist in `Predicate.Value`. Otherwise, the corresponding value.
     func asPredicateValue() -> Predicate.Value? {
         switch self {
@@ -272,10 +272,10 @@ extension Context.AnswerWithDependencies {
 /// Evaluates the sub-`Predicate`s of compound `Predicate`s of types: `.and`, `.or`.
 /// - parameters:
 ///   - predicates: the sub-`Predicate`s associated with the compound `Predicate` being evaluated.
-///   - context: the `Context` to look up `questions`s from.
+///   - context: the `Facts` to look up `questions`s from.
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
-func evaluateCompound(predicates: [Predicate], in context: Context, identity: Bool) -> Predicate.EvaluationResult {
-    var keys: Set<Context.Question> = []
+func evaluateCompound(predicates: [Predicate], in context: Facts, identity: Bool) -> Predicate.EvaluationResult {
+    var keys: Set<Facts.Question> = []
     for predicate in predicates {
         let result = evaluate(predicate: predicate, in: context)
         switch result {
@@ -291,7 +291,7 @@ func evaluateCompound(predicates: [Predicate], in context: Context, identity: Bo
     return .success(.init(value: !identity, keys: keys))
 }
 
-func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, in context: Context) -> Predicate.EvaluationResult {
+func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, in context: Facts) -> Predicate.EvaluationResult {
     let lhsEvaluation = evaluate(predicate: lhs, in: context)
     switch lhsEvaluation {
     case .failed:
@@ -314,7 +314,7 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
 
 /// only succeeds if the question evaluates to a boolean answer
 /// otherwise, .failed(.typeMismatch)
-func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Context.Question, in context: Context) -> Predicate.EvaluationResult {
+func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Facts.Question, in context: Facts) -> Predicate.EvaluationResult {
     let pResult = evaluate(predicate: predicate, in: context)
     switch pResult {
     case .failed: return pResult
@@ -336,7 +336,7 @@ func comparePredicateToKey(predicate: Predicate, f: (Bool, Bool) -> Bool, questi
     }
 }
 
-func compareAnswers(lhs: Context.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Context.AnswerWithDependencies, keys: Set<Context.Question>) -> Predicate.EvaluationResult {
+func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Facts.AnswerWithDependencies, keys: Set<Facts.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case let (.bool(lhsValue, lhsMatch), .bool(rhsValue, rhsMatch)):
         return op.same(lhsValue, rhsValue)
@@ -362,7 +362,7 @@ func compareAnswers(lhs: Context.AnswerWithDependencies, op: Predicate.Compariso
 // if both keys evaluate to boolean values
 //   only succeeds if the op is == or !=
 //   otherwise .failed(.predicatesAreOnlyEquatableNotComparable)
-func compareKeyToKey(lhs: Context.Question, op: Predicate.ComparisonOperator, rhs: Context.Question, in context: Context) -> Predicate.EvaluationResult {
+func compareKeyToKey(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, in context: Facts) -> Predicate.EvaluationResult {
     let lhsResult = context[lhs]
     switch lhsResult {
     case .failed(let answerError):
@@ -381,7 +381,7 @@ func compareKeyToKey(lhs: Context.Question, op: Predicate.ComparisonOperator, rh
 // only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
 // if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareKeyToValue(question: Context.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, in context: Context) -> Predicate.EvaluationResult {
+func compareKeyToValue(question: Facts.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, in context: Facts) -> Predicate.EvaluationResult {
     let answerResult = context[question]
     switch answerResult {
     case .failed(let answerError):
@@ -393,7 +393,7 @@ func compareKeyToValue(question: Context.Question, op: Predicate.ComparisonOpera
     }
 }
 
-func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, match: Set<Context.Question>) -> Predicate.EvaluationResult {
+func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, match: Set<Facts.Question>) -> Predicate.EvaluationResult {
     switch (lhs, rhs) {
     case (.int(let lhs), .int(let rhs)):
         return .success(.init(value: op.compare(lhs, rhs), keys: match))
@@ -410,7 +410,7 @@ func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator,
     }
 }
 
-func evaluate(predicate: Predicate, in context: Context) -> Predicate.EvaluationResult {
+func evaluate(predicate: Predicate, in context: Facts) -> Predicate.EvaluationResult {
     switch predicate {
     case .false: return .success(.false)
     case .true: return .success(.true)
