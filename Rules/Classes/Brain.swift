@@ -114,16 +114,8 @@ public class Brain {
         case .failed(let error):
             return .failed(error)
         case .success(let candidateRules):
-            let chosenCandidateResult = chooseRule(for: question, amongst: candidateRules)
-            switch chosenCandidateResult {
-            case .failed(let error):
-                return .failed(error)
-            case .success(let candidate):
-                return candidate
-                    .rule
-                    .fire(given: facts, dependencies: candidate.dependencies)
-                    .bimap(Facts.AnswerError.firingFailed, Rules.id)
-            }
+            return chooseRule(for: question, amongst: candidateRules)
+                .bimap(Rules.id, { $0.rule.answer.asAnswerWithDependencies($0.dependencies) })
         }
     }
 }

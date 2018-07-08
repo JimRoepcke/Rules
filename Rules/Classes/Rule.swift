@@ -49,13 +49,6 @@ public struct Rule {
         case invalidRHSValue(debugDescription: String, value: Predicate.Value)
     }
 
-    public typealias FiringResult = Rules.Result<FiringError, Facts.AnswerWithDependencies>
-
-    /// TODO: this is going to change to a `String` which the `Brain` uses to look up
-    /// an `Assignment` function by name. This will make it easy to make the
-    /// `Rule` type `Codable` for conversion to/from JSON.
-    public typealias Assignment = (Rule, Facts, Facts.Dependencies) -> FiringResult
-
     /// Higher priority `Rule`s have their `predicate` checked before `Rules`
     /// with lower `priority`.
     /// The RHS of a higher `priority` `Rule` that matches the current state of
@@ -79,15 +72,6 @@ public struct Rule {
     /// amongst all `Rule`s for that question currently matching the state of
     /// the `Facts`.
     public let answer: Facts.Answer
-
-    /// the standard/default assignment will just return the `value` as is.
-    public let assignment: Assignment // will change to `String`
-
-    /// This method is going to move into `Facts` when `assignment`
-    /// is changed from a function to a `String`
-    func fire(given facts: Facts, dependencies: Facts.Dependencies) -> FiringResult {
-        return assignment(self, facts, dependencies)
-    }
 }
 
 public enum RuleParsingError: Error, Equatable {
@@ -149,8 +133,7 @@ func parse(humanRule: String) -> RuleParsingResult {
                 priority: priority,
                 predicate: predicate,
                 question: .init(identifier: question),
-                answer: .string(answer), // TODO: support other types
-                assignment: { rule, _, dependencies in .success(rule.answer.asAnswerWithDependencies(dependencies)) }
+                answer: .string(answer) // TODO: support other types
             )
         )
     }
