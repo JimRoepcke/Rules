@@ -17,8 +17,15 @@ public enum Predicate: Equatable {
 
     public enum Expression: Equatable {
         case question(Facts.Question)
-        case value(Value)
+        case answer(Facts.Answer)
         case predicate(Predicate)
+
+        var size: Int {
+            switch self {
+            case .question, .answer: return 0
+            case .predicate(let it): return it.size
+            }
+        }
     }
 
     public enum ComparisonOperator: String, Equatable, Codable {
@@ -28,13 +35,6 @@ public enum Predicate: Equatable {
         case isGreaterThan
         case isLessThanOrEqualTo
         case isGreaterThanOrEqualTo
-    }
-
-    // does not include `.bool` because `.true` and `.false` are directly in `Predicate`
-    public enum Value: Equatable {
-        case int(Int)
-        case double(Double)
-        case string(String)
     }
 
     /// `size` helps break ties between multiple candidate rules with the same
@@ -49,12 +49,13 @@ public enum Predicate: Equatable {
         case .not(let predicate): return predicate.size
         case .and(let predicates): return predicates.count
         case .or(let predicates): return predicates.map { $0.size }.max() ?? 0
+        case .comparison(let lhs, _, let rhs): return lhs.size + rhs.size
         }
     }
 
     public struct Evaluation: Equatable {
         public let value: Bool
-        public let dependencies: Set<Facts.Question>
+        public let dependencies: Facts.Dependencies
 
         public static let `false` = Evaluation(value: false, dependencies: [])
         public static let `true` = Evaluation(value: true, dependencies: [])
@@ -81,15 +82,15 @@ public enum Predicate: Equatable {
 extension Predicate.Expression: Codable {
     enum CodingKeys: String, CodingKey {
         case question
-        case value
+        case answer
         case predicate
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         if container.contains(.question) {
             self = .question(try container.decode(Facts.Question.self, forKey: .question))
-        } else if container.contains(.value) {
-            self = .value(try container.decode(Predicate.Value.self, forKey: .value))
+        } else if container.contains(.answer) {
+            self = .answer(try container.decode(Facts.Answer.self, forKey: .answer))
         } else if container.contains(.predicate) {
             self = .predicate(try container.decode(Predicate.self, forKey: .predicate))
         } else {
@@ -102,15 +103,15 @@ extension Predicate.Expression: Codable {
         switch self {
         case .question(let question):
             try container.encode(question.identifier, forKey: .question)
-        case .value(let value):
-            try container.encode(value, forKey: .value)
+        case .answer(let answer):
+            try container.encode(answer, forKey: .answer)
         case .predicate(let predicate):
             try container.encode(predicate, forKey: .predicate)
         }
     }
 }
 
-extension Predicate.Value: Codable {
+extension Facts.Answer: Codable {
     enum CodingKeys: String, CodingKey {
         case int
         case double
@@ -119,25 +120,27 @@ extension Predicate.Value: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         if container.contains(.int) {
-            self = .int(try container.decode(Int.self, forKey: .int))
+            self.init(equatable: try container.decode(Int.self, forKey: .int))
         } else if container.contains(.double) {
-            self = .double(try container.decode(Double.self, forKey: .double))
+            self.init(comparable: try container.decode(Double.self, forKey: .double))
         } else if container.contains(.string) {
-            self = .string(try container.decode(String.self, forKey: .string))
+            self.init(comparable: try container.decode(String.self, forKey: .string))
         } else {
-            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Predicate.Value JSON object: ' 'int', 'double', 'string'"))
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Facts.Answer JSON object: ' 'int', 'double', 'string'"))
         }
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .int(let value):
-            try container.encode(value, forKey: .int)
-        case .double(let value):
-            try container.encode(value, forKey: .double)
-        case .string(let value):
-            try container.encode(value, forKey: .string)
+        switch value {
+        case let it as Int:
+            try container.encode(it, forKey: .int)
+        case let it as Double:
+            try container.encode(it, forKey: .double)
+        case let it as String:
+            try container.encode(it, forKey: .string)
+        default:
+            throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Facts.Answer only encodes values of type Int, Double and String, not \(String(describing: type(of: value)))"))
         }
     }
 }
@@ -244,26 +247,13 @@ extension Predicate.ComparisonOperator {
     }
 }
 
-extension Facts.AnswerWithDependencies {
-    /// returns `nil` for `.bool`, as that does not exist in `Predicate.Value`. Otherwise, the corresponding value.
-    func asPredicateValue() -> Predicate.Value? {
-        switch self {
-        case .bool: return nil
-        case let .double(it, _): return .double(it)
-        case let .int(it, _): return .int(it)
-        case let .string(it, _): return .string(it)
-
-        }
-    }
-}
-
 /// Evaluates the sub-`Predicate`s of compound `Predicate`s of types: `.and`, `.or`.
 /// - parameters:
 ///   - predicates: the sub-`Predicate`s associated with the compound `Predicate` being evaluated.
 ///   - facts: the `Facts` to look up `questions`s from.
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
 func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Bool) -> Predicate.EvaluationResult {
-    var dependencies: Set<Facts.Question> = []
+    var dependencies: Facts.Dependencies = []
     for predicate in predicates {
         let result = evaluate(predicate: predicate, given: facts)
         switch result {
@@ -307,39 +297,51 @@ func comparePredicateToQuestion(predicate: Predicate, f: (Bool, Bool) -> Bool, q
     guard case let .success(predicateEvaluation) = predicateEvaluationResult else {
         return predicateEvaluationResult
     }
-    let result = facts[question]
+    let result = facts.ask(question: question)
     switch result {
     case .failed(let answerError):
         return .failed(.questionEvaluationFailed(answerError))
-    case .success(.bool(let questionAnswerValue, let questionDependencies)):
-        let evaluationValue = f(predicateEvaluation.value, questionAnswerValue)
-        let evaluationDependencies = questionDependencies
+    case .success(let fact):
+        guard let bool = fact.value as? Bool else {
+            return .failed(.typeMismatch)
+        }
+        let evaluationValue = f(predicateEvaluation.value, bool)
+        let evaluationDependencies = fact.dependencies
             .union(predicateEvaluation.dependencies)
             .union([question])
         return .success(.init(value: evaluationValue, dependencies: evaluationDependencies))
-    case .success:
-        return .failed(.typeMismatch)
     }
 }
 
-func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Facts.AnswerWithDependencies, dependencies: Set<Facts.Question>) -> Predicate.EvaluationResult {
-    switch (lhs, rhs) {
-    case let (.bool(lhsValue, lhsMatch), .bool(rhsValue, rhsMatch)):
-        return op.same(lhsValue, rhsValue)
-            .map { .success(.init(value: $0, dependencies: lhsMatch.union(rhsMatch).union(dependencies))) }
-            ?? .failed(.predicatesAreOnlyEquatableNotComparable)
-    case let (.int(lhsValue, lhsMatch), .int(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
-    case let (.double(lhsValue, lhsMatch), .double(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
-    case let (.string(lhsValue, lhsMatch), .string(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
-    case let (.int(lhsValue, lhsMatch), .double(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(Double(lhsValue), rhsValue), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
-    case let (.double(lhsValue, lhsMatch), .int(rhsValue, rhsMatch)):
-        return .success(.init(value: op.compare(lhsValue, Double(rhsValue)), dependencies: lhsMatch.union(rhsMatch).union(dependencies)))
-    default:
-        return .failed(.typeMismatch)
+func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Facts.AnswerWithDependencies, dependencies: Facts.Dependencies) -> Predicate.EvaluationResult {
+    let la = lhs.answer
+    let ra = rhs.answer
+    let dep = dependencies.union(lhs.dependencies.union(rhs.dependencies))
+    switch op {
+    case .isEqualTo:
+        return la.isEquatable(to: ra)
+            ? .success(.init(value: la.isEqual(to: ra), dependencies: dep))
+            : .failed(.typeMismatch)
+    case .isNotEqualTo:
+        return la.isEquatable(to: ra)
+            ? .success(.init(value: la.isNotEqual(to: ra), dependencies: dep))
+            : .failed(.typeMismatch)
+    case .isLessThan:
+        return la.isComparable(to: ra)
+            ? .success(.init(value: la.isLess(than: ra), dependencies: dep))
+            : .failed(.typeMismatch)
+    case .isLessThanOrEqualTo:
+        return la.isComparable(to: ra)
+            ? .success(.init(value: la.isLessThanOrEqual(to: ra), dependencies: dep))
+            : .failed(.typeMismatch)
+    case .isGreaterThan:
+        return la.isComparable(to: ra)
+            ? .success(.init(value: la.isGreater(than: ra), dependencies: dep))
+            : .failed(.typeMismatch)
+    case .isGreaterThanOrEqualTo:
+        return la.isComparable(to: ra)
+            ? .success(.init(value: la.isGreaterThanOrEqual(to: ra), dependencies: dep))
+            : .failed(.typeMismatch)
     }
 }
 
@@ -349,12 +351,12 @@ func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonO
 //   only succeeds if the op is == or !=
 //   otherwise .failed(.predicatesAreOnlyEquatableNotComparable)
 func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
-    let lhsResult = facts[lhs]
+    let lhsResult = facts.ask(question: lhs)
     switch lhsResult {
     case .failed(let answerError):
         return .failed(.questionEvaluationFailed(answerError))
     case .success(let lhsAnswer):
-        let rhsResult = facts[rhs]
+        let rhsResult = facts.ask(question: rhs)
         switch rhsResult {
         case .failed(let answerError):
             return .failed(.questionEvaluationFailed(answerError))
@@ -367,32 +369,13 @@ func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOper
 // only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
 // if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareQuestionToValue(question: Facts.Question, op: Predicate.ComparisonOperator, value: Predicate.Value, given facts: Facts) -> Predicate.EvaluationResult {
-    let answerResult = facts[question]
-    switch answerResult {
+func compareQuestionToAnswer(question: Facts.Question, op: Predicate.ComparisonOperator, answer: Facts.Answer, given facts: Facts) -> Predicate.EvaluationResult {
+    let questionResult = facts.ask(question: question)
+    switch questionResult {
     case .failed(let answerError):
         return .failed(.questionEvaluationFailed(answerError))
-    case .success(let answer):
-        return answer.asPredicateValue()
-            .map { compareValueToValue(lhs: $0, op: op, rhs: value, dependencies: answer.dependencies.union([question])) }
-            ?? .failed(.typeMismatch)
-    }
-}
-
-func compareValueToValue(lhs: Predicate.Value, op: Predicate.ComparisonOperator, rhs: Predicate.Value, dependencies: Set<Facts.Question>) -> Predicate.EvaluationResult {
-    switch (lhs, rhs) {
-    case (.int(let lhs), .int(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), dependencies: dependencies))
-    case (.double(let lhs), .double(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), dependencies: dependencies))
-    case (.string(let lhs), .string(let rhs)):
-        return .success(.init(value: op.compare(lhs, rhs), dependencies: dependencies))
-    case (.int(let lhs), .double(let rhs)):
-        return .success(.init(value: op.compare(Double(lhs), rhs), dependencies: dependencies))
-    case (.double(let lhs), .int(let rhs)):
-        return .success(.init(value: op.compare(lhs, Double(rhs)), dependencies: dependencies))
-    default:
-        return .failed(.typeMismatch)
+    case .success(let questionAnswer):
+        return compareAnswers(lhs: questionAnswer, op: op, rhs: answer.asAnswerWithDependencies(), dependencies: [question])
     }
 }
 
@@ -419,8 +402,8 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
     case .comparison(.predicate(let lhs), .isNotEqualTo, .predicate(let rhs)):
         return comparePredicates(lhs: lhs, f: !=, rhs: rhs, given: facts)
 
-    case .comparison(.predicate, _, .value),
-         .comparison(.value, _, .predicate):
+    case .comparison(.predicate, _, .answer),
+         .comparison(.answer, _, .predicate):
         return .failed(.typeMismatch)
 
     case .comparison(.predicate(let p), .isEqualTo, .question(let question)),
@@ -434,14 +417,14 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
     case .comparison(.question(let lhs), let op, .question(let rhs)):
         return compareQuestionToQuestion(lhs: lhs, op: op, rhs: rhs, given: facts)
 
-    case .comparison(.question(let question), let op, .value(let value)):
-        return compareQuestionToValue(question: question, op: op, value: value, given: facts)
+    case .comparison(.question(let question), let op, .answer(let answer)):
+        return compareQuestionToAnswer(question: question, op: op, answer: answer, given: facts)
 
-    case .comparison(.value(let value), let op, .question(let question)):
-        return compareQuestionToValue(question: question, op: op.swapped, value: value, given: facts)
+    case .comparison(.answer(let answer), let op, .question(let question)):
+        return compareQuestionToAnswer(question: question, op: op.swapped, answer: answer, given: facts)
 
-    case .comparison(.value(let lhs), let op, .value(let rhs)):
-        return compareValueToValue(lhs: lhs, op: op, rhs: rhs, dependencies: [])
+    case .comparison(.answer(let lhs), let op, .answer(let rhs)):
+        return compareAnswers(lhs: lhs.asAnswerWithDependencies(), op: op, rhs: rhs.asAnswerWithDependencies(), dependencies: [])
     }
 }
 
@@ -557,7 +540,7 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
     case .constantValue:
         switch expr.constantValue {
         case let s as String:
-            return .success(.value(.string(s)))
+            return .success(.answer(.init(comparable: s)))
         case let num as NSNumber:
             let type: CFNumberType = CFNumberGetType(num)
             switch type {
@@ -571,13 +554,13 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
                  .longType,
                  .longLongType,
                  .cfIndexType:
-                return .success(.value(.int(num.intValue)))
+                return .success(.answer(.init(comparable: num.intValue)))
             case .float32Type,
                  .float64Type,
                  .floatType,
                  .doubleType,
                  .cgFloatType:
-                return .success(.value(.double(num.doubleValue)))
+                return .success(.answer(.init(comparable: num.doubleValue)))
             case .charType:
                 return .success(.predicate(num.boolValue ? .true : .false))
             }

@@ -29,7 +29,7 @@ class RuleTests: QuickSpec {
                         expect(rule.priority) == 10
                         expect(rule.predicate) == .true
                         expect(rule.question) == "question"
-                        expect(rule.answer) == .string("answer")
+                        expect(rule.answer) == "answer"
                     }
                 }
             }

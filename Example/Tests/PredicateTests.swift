@@ -209,44 +209,44 @@ class PredicateTests: QuickSpec {
 
                 }
 
-                it("can check equality of boolean values") {
+                it("can check equality of boolean predicates") {
                     let sut = SUT.comparison(lhs: .predicate(.false), op: .isEqualTo, rhs: .predicate(.false))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
-                it("can check equality of int values") {
-                    let sut = SUT.comparison(lhs: .value(.int(0)), op: .isEqualTo, rhs: .value(.int(0)))
+                it("can check equality of int answers") {
+                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isEqualTo, rhs: .answer(.init(comparable: 0)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
-                it("can check equality of double values") {
-                    let sut = SUT.comparison(lhs: .value(.double(0)), op: .isEqualTo, rhs: .value(.double(0)))
+                it("can check equality of double answers") {
+                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isEqualTo, rhs: .answer(.init(comparable: 0)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
-                it("can check equality of string values") {
-                    let sut = SUT.comparison(lhs: .value(.string("0")), op: .isEqualTo, rhs: .value(.string("0")))
+                it("can check equality of string answers") {
+                    let sut = SUT.comparison(lhs: .answer(.init(comparable: "0")), op: .isEqualTo, rhs: .answer(.init(comparable: "0")))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
-                it("can compare int values") {
-                    let sut = SUT.comparison(lhs: .value(.int(0)), op: .isLessThan, rhs: .value(.int(1)))
+                it("can compare int answers") {
+                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isLessThan, rhs: .answer(.init(comparable: 1)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
-                it("can compare double values") {
-                    let sut = SUT.comparison(lhs: .value(.double(0)), op: .isLessThan, rhs: .value(.double(1)))
+                it("can compare double answers") {
+                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isLessThan, rhs: .answer(.init(comparable: 1)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
-                it("can compare string values") {
-                    let sut = SUT.comparison(lhs: .value(.string("0")), op: .isLessThan, rhs: .value(.string("1")))
+                it("can compare string answers") {
+                    let sut = SUT.comparison(lhs: .answer(.init(comparable: "0")), op: .isLessThan, rhs: .answer(.init(comparable: "1")))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
@@ -254,7 +254,7 @@ class PredicateTests: QuickSpec {
                 it("can check equality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .int(0), forQuestion: "test")
+                    facts.know(answer: .init(comparable: 0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
@@ -262,7 +262,7 @@ class PredicateTests: QuickSpec {
                 it("can check inequality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isNotEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .int(0), forQuestion: "test")
+                    facts.know(answer: .init(comparable: 0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: false, dependencies: ["test"]))
                 }
@@ -270,16 +270,16 @@ class PredicateTests: QuickSpec {
                 it("can check equality of different dependencies") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test1")), op: .isEqualTo, rhs: .question(.init(identifier: "test2")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .int(0), forQuestion: "test1")
-                    facts.know(answer: .int(1), forQuestion: "test2")
+                    facts.know(answer: .init(comparable: 0), forQuestion: "test1")
+                    facts.know(answer: .init(comparable: 1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"]))
                 }
 
-                it("can compare a question to a value") {
-                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .value(.int(0)))
+                it("can compare a question to an answer") {
+                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .answer(.init(comparable: 0)))
                     let facts = Facts.mockf()
-                    facts.know(answer: .int(0), forQuestion: "test")
+                    facts.know(answer: .init(comparable: 0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
@@ -287,7 +287,7 @@ class PredicateTests: QuickSpec {
                 it("can compare a predicate to a question") {
                     let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .bool(true), forQuestion: "test")
+                    facts.know(answer: .init(equatable: true), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
@@ -328,7 +328,7 @@ class PredicateTests: QuickSpec {
                                 .comparison(
                                     lhs: .question(.init(identifier: "someQuestion")),
                                     op: .isEqualTo,
-                                    rhs: .value(.string("someAnswer"))
+                                    rhs: .answer(.init(comparable: "someAnswer"))
                                 ),
                                 .true
                             ]
@@ -344,7 +344,7 @@ class PredicateTests: QuickSpec {
                         .comparison(
                             lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
-                            rhs: .value(.int(-42))
+                            rhs: .answer(.init(comparable: -42))
                         )
                     )
                 }
@@ -383,7 +383,7 @@ class PredicateTests: QuickSpec {
                         .comparison(
                             lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
-                            rhs: .value(.double(2.5))
+                            rhs: .answer(.init(comparable: 2.5))
                         )
                     )
                 }
@@ -394,9 +394,9 @@ class PredicateTests: QuickSpec {
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .value(.double(1.5)),
+                            lhs: .answer(.init(comparable: 1.5)),
                             op: .isLessThan,
-                            rhs: .value(.double(2.5))
+                            rhs: .answer(.init(comparable: 2.5))
                         )
                     )
                 }

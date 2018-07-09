@@ -51,7 +51,7 @@ class FactsTests: QuickSpec {
                         onSuccess: onS
                     )
 
-                    expect(result) == AnswerWithDependenciesResult.failed(.noRuleFound(question: "missing"))
+                    expect(result) == Facts.AnswerWithDependenciesResult.failed(.noRuleFound(question: "missing"))
 
                     expect(failed).to(beTrue())
                     expect(succeeded).to(beFalse())

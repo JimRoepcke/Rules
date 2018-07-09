@@ -16,22 +16,32 @@ public class Brain {
 
     public init(ambiguousCandidateRulesStrategy: AmbiguousCandidateRulesStrategy) {
         self.rules = [:]
+        self.assignments = [:]
         self.ambiguousCandidateRulesStrategy = ambiguousCandidateRulesStrategy
     }
 
     public init(copying other: Brain) {
         self.rules = other.rules
+        self.assignments = [:]
         self.ambiguousCandidateRulesStrategy = other.ambiguousCandidateRulesStrategy
     }
 
     /// The `rules` used to infer answers to questions
     var rules: [Facts.Question: [Int: [Rule]]]
 
+    var assignments: [Assignment: AssignmentFunction]
+
     /// Adds a rule to the `Brain`.
     /// This method is not thread-safe.
     public func add(rule: Rule) {
         // TODO: don't add the rule if it's already added - need the fingerprint for this
         rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
+    }
+
+    /// Adds an assignment function to the `Brain`.
+    /// This method is not thread-safe.
+    public func add(assignment: Assignment, function: @escaping AssignmentFunction) {
+        assignments[assignment] = function
     }
 
     typealias Candidate = (rule: Rule, dependencies: Facts.Dependencies)
@@ -107,7 +117,7 @@ public class Brain {
     }
 
     /// only called when `facts` has no known or inferred answer for this question
-    public func ask(question: Facts.Question, given facts: Facts) -> AnswerWithDependenciesResult {
+    public func ask(question: Facts.Question, given facts: Facts) -> Facts.AnswerWithDependenciesResult {
         // find candidate rules
         let candidateRulesResult = candidates(for: question, given: facts)
         switch candidateRulesResult {
@@ -119,16 +129,68 @@ public class Brain {
             case .failed(let error):
                 return .failed(error)
             case .success(let candidate):
-                return candidate
-                    .rule
-                    .fire(given: facts, dependencies: candidate.dependencies)
-                    .bimap(Facts.AnswerError.firingFailed, Rules.id)
+                return answer(for: candidate, given: facts)
+                    .bimap(Facts.AnswerError.assignmentFailed, Rules.id)
             }
         }
     }
-}
 
-public typealias AnswerWithDependenciesResult = Rules.Result<Facts.AnswerError, Facts.AnswerWithDependencies>
+    func answer(for candidate: Candidate, given facts: Facts) -> AssignmentResult {
+        let rule = candidate.rule
+        let dependencies = candidate.dependencies
+        guard let assignment = rule.assignment else {
+            return .success(.init(answer: .init(comparable: rule.answer), dependencies: dependencies))
+        }
+        guard let assignmentFunction = assignments[assignment] else {
+            return .failed(.assignmentNotFound(assignment: assignment))
+        }
+        return assignmentFunction(rule, facts, dependencies)
+    }
+
+    /// This is basically a `String`, but it's more type-safe.
+    public struct Assignment: Hashable, Codable, ExpressibleByStringLiteral {
+        public let identifier: String
+
+        public typealias StringLiteralType = String
+
+        public init(stringLiteral: String) {
+            self.identifier = stringLiteral
+        }
+
+        public init(identifier: String) {
+            self.identifier = identifier
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            self.identifier = try container.decode(String.self)
+        }
+
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(identifier)
+        }
+    }
+
+    /// If an `Assignment` cannot provide a `Facts.AnswerWithDependencies`, it
+    /// returns one of these cases.
+    public enum AssignmentError: Swift.Error, Equatable {
+        case assignmentNotFound(assignment: Assignment)
+        /// An unexpected error occurred.
+        /// - parameter debugDescription: use for debug logging.
+        case failed(debugDescription: String)
+        /// The format of the RHS answer was incompatable with the expectations
+        /// of the `assignment` function.
+        case invalidAnswer(debugDescription: String, answer: String)
+    }
+
+    public typealias AssignmentResult
+        = Rules.Result<AssignmentError, Facts.AnswerWithDependencies>
+
+    public typealias AssignmentFunction
+        = (Rule, Facts, Facts.Dependencies) -> AssignmentResult
+
+}
 
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.

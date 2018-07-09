@@ -37,25 +37,6 @@
 /// - note: a `Rule` is invalid if its `predicate` contains its `question`.
 public struct Rule {
 
-    /// If an `Assignment` cannot provide a `Facts.AnswerWithDependencies`, it
-    /// returns one of these cases.
-    public enum FiringError: Swift.Error, Equatable {
-        /// An unexpected error occurred.
-        /// - parameter debugDescription: use for debug logging.
-        case failed(debugDescription: String)
-        /// The format of the RHS value was somehow incompatable with the `assignment`.
-        /// - parameter debugDescription: use for debug logging.
-        /// - parameter value: The RHS `value` of the `Rule` the `assignment` could not process.
-        case invalidRHSValue(debugDescription: String, value: Predicate.Value)
-    }
-
-    public typealias FiringResult = Rules.Result<FiringError, Facts.AnswerWithDependencies>
-
-    /// TODO: this is going to change to a `String` which the `Brain` uses to look up
-    /// an `Assignment` function by name. This will make it easy to make the
-    /// `Rule` type `Codable` for conversion to/from JSON.
-    public typealias Assignment = (Rule, Facts, Facts.Dependencies) -> FiringResult
-
     /// Higher priority `Rule`s have their `predicate` checked before `Rules`
     /// with lower `priority`.
     /// The RHS of a higher `priority` `Rule` that matches the current state of
@@ -78,16 +59,13 @@ public struct Rule {
     /// this `Rule`'s RHS `question` iff this `Rule` has the highest `priority`
     /// amongst all `Rule`s for that question currently matching the state of
     /// the `Facts`.
-    public let answer: Facts.Answer
+    public let answer: String
 
-    /// the standard/default assignment will just return the `value` as is.
-    public let assignment: Assignment // will change to `String`
-
-    /// This method is going to move into `Facts` when `assignment`
-    /// is changed from a function to a `String`
-    func fire(given facts: Facts, dependencies: Facts.Dependencies) -> FiringResult {
-        return assignment(self, facts, dependencies)
-    }
+    /// If `nil`, the the `Rule`'s `answer` will be returned verbatim as the
+    /// answer for an inferred fact.
+    /// Otherwise, the answer for an inferred fact is the result of calling the
+    /// associated `Brain.AssignmentFunction`.
+    public let assignment: Brain.Assignment?
 }
 
 public enum RuleParsingError: Error, Equatable {
@@ -149,8 +127,8 @@ func parse(humanRule: String) -> RuleParsingResult {
                 priority: priority,
                 predicate: predicate,
                 question: .init(identifier: question),
-                answer: .string(answer), // TODO: support other types
-                assignment: { rule, _, dependencies in .success(rule.answer.asAnswerWithDependencies(dependencies)) }
+                answer: answer,
+                assignment: nil
             )
         )
     }

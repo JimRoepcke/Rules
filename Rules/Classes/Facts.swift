@@ -59,26 +59,101 @@ public class Facts {
         }
     }
 
-    /// A value that is provided to `Facts` either by:
+    /// A `value` provided to `Facts` either by:
     /// - the client of `Facts` as the answer to a question with a known fact
     /// - the receiver's `Brain` as the answer to a question with an inferred fact.
-    public enum Answer: Equatable {
-        case bool(Bool)
-        case double(Double)
-        case int(Int)
-        case string(String)
+    public struct Answer: Equatable {
+        public let value: Any
+
+        public let _isEquatableTo: (Answer) -> Bool
+        public let _isComparableTo: ((Answer) -> Bool)?
+        public let _isEqual: ((Answer) -> Bool)?
+        public let _isLessThan: ((Answer) -> Bool)?
+
+        init<T: Equatable>(equatable value: T) {
+            self.value = value
+            self._isEquatableTo = Answer.isEquatable(to: value)
+            self._isComparableTo = nil
+            self._isEqual = Answer.isEqual(lhs: value)
+            self._isLessThan = nil
+        }
+
+        init<T: Comparable>(comparable value: T) {
+            self.value = value
+            self._isEquatableTo = Answer.isEquatable(to: value)
+            self._isComparableTo = Answer.isComparable(to: value)
+            self._isEqual = Answer.isEqual(lhs: value)
+            self._isLessThan = Answer.isLess(lhs: value)
+        }
+
+        public static func == (lhs: Answer, rhs: Answer) -> Bool {
+            return lhs.isEqual(to: rhs)
+        }
+        
+        init(answerWithDependendOnQuestions: AnswerWithDependencies) {
+            self = answerWithDependendOnQuestions.answer
+        }
 
         func asAnswerWithDependencies(_ dependencies: Dependencies = []) -> AnswerWithDependencies {
-            switch self {
-            case let .bool(it): return .bool(it, dependencies: dependencies)
-            case let .double(it): return .double(it, dependencies: dependencies)
-            case let .int(it): return .int(it, dependencies: dependencies)
-            case let .string(it): return .string(it, dependencies: dependencies)
+            return .init(answer: self, dependencies: dependencies)
+        }
+
+        public func isEquatable(to answer: Answer) -> Bool {
+            return _isEquatableTo(answer)
+        }
+
+        public func isEqual(to other: Answer) -> Bool {
+            return _isEqual.map { $0(other) } ?? false
+        }
+
+        public func isNotEqual(to other: Answer) -> Bool {
+            return !isEqual(to: other)
+        }
+
+        public func isComparable(to answer: Answer) -> Bool {
+            return _isComparableTo.map { $0(answer) } ?? false
+        }
+
+        public func isLess(than other: Answer) -> Bool {
+            return _isLessThan.map { $0(other) } ?? false
+        }
+
+        public func isLessThanOrEqual(to other: Answer) -> Bool {
+            return isLess(than:other) || isEqual(to: other)
+        }
+
+        public func isGreater(than other: Answer) -> Bool {
+            return !isLess(than:other)
+        }
+
+        public func isGreaterThanOrEqual(to other: Answer) -> Bool {
+            return isGreater(than: other) || isEqual(to: other)
+        }
+
+        static func isEquatable<T: Equatable>(to answer: T) -> (Answer) -> Bool {
+            return { other in (other.value as? T) != nil }
+        }
+
+        static func isComparable<T: Comparable>(to answer: T) -> (Answer) -> Bool {
+            return { other in (other.value as? T) != nil }
+        }
+
+        static func isEqual<T: Equatable>(lhs: T) -> (Answer) -> Bool {
+            return { rhs in
+                guard let other = rhs.value as? T else {
+                    return false
+                }
+                return lhs == other
             }
         }
 
-        init(answerWithDependendOnQuestions: AnswerWithDependencies) {
-            self = answerWithDependendOnQuestions.answer
+        static func isLess<T: Comparable>(lhs: T) -> (Answer) -> Bool {
+            return { rhs in
+                guard let other = rhs.value as? T else {
+                    return false
+                }
+                return lhs < other
+            }
         }
     }
 
@@ -86,30 +161,15 @@ public class Facts {
     public typealias Dependencies = Set<Question>
 
     /// Associates an answer with the questions that answer depended on.
-    public enum AnswerWithDependencies: Equatable {
-        case bool(Bool, dependencies: Dependencies)
-        case double(Double, dependencies: Dependencies)
-        case int(Int, dependencies: Dependencies)
-        case string(String, dependencies: Dependencies)
-
-        var answer: Answer {
-            switch self {
-            case .bool(let it, _): return .bool(it)
-            case .double(let it, _): return .double(it)
-            case .int(let it, _): return .int(it)
-            case .string(let it, _): return .string(it)
-            }
-        }
-
-        var dependencies: Dependencies {
-            switch self {
-            case .bool(_, let it): return it
-            case .double(_, let it): return it
-            case .int(_, let it): return it
-            case .string(_, let it): return it
-            }
-        }
+    public struct AnswerWithDependencies: Equatable {
+        public let answer: Answer
+        public let dependencies: Facts.Dependencies
+        public var value: Any { return answer.value }
     }
+
+    public typealias AnswerWithDependenciesResult = Rules.Result<AnswerError, AnswerWithDependencies>
+
+    public typealias AnswerResult = Rules.Result<AnswerError, Answer>
 
     var known: [Question: AnswerWithDependencies]
     var inferred: [Question: AnswerWithDependencies]
@@ -144,32 +204,21 @@ public class Facts {
         indirect case candidateEvaluationFailed(Predicate.EvaluationError)
         case noRuleFound(question: Question)
         case ambiguous(question: Question)
-        case firingFailed(Rule.FiringError)
+        case assignmentFailed(Brain.AssignmentError)
     }
 
-    public func ask(question: Question) -> AnswerResult {
-        return self[question].bimap(Rules.id, Facts.Answer.init)
-    }
-
-    public subscript(question: Question) -> AnswerWithDependenciesResult {
-        get {
-            if let answer = known[question] {
-                return .success(answer)
-            }
-            if let answer = inferred[question] {
-                return .success(answer)
-            }
-            return Fns.ask(
+    public func ask(question: Question) -> AnswerWithDependenciesResult {
+        let answer = known[question] ?? inferred[question]
+        return answer
+            .map(AnswerWithDependenciesResult.success)
+            ?? Fns.ask(
                 question: question,
                 given: self,
                 onFailure: Rules.id,
                 onSuccess: Fns.cache(question: question, given: self)
-            )
-        }
+        )
     }
 }
-
-public typealias AnswerResult = Rules.Result<Facts.AnswerError, Facts.Answer>
 
 typealias Fns = FactsFunctions
 
@@ -190,7 +239,7 @@ enum FactsFunctions {
         given facts: Facts,
         onFailure: (Facts.AnswerError) -> Facts.AnswerError,
         onSuccess: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
-        ) -> AnswerWithDependenciesResult {
+        ) -> Facts.AnswerWithDependenciesResult {
         return facts
             .brain
             .ask(question: question, given: facts)
