@@ -68,7 +68,7 @@ public struct Rule: Equatable, Codable {
     public let assignment: Brain.Assignment?
 }
 
-public enum RuleParsingError: Error, Equatable {
+public enum HumanRuleParsingError: Error, Equatable {
     case prioritySeparatorNotFound
     case invalidPriority
     case implicationOperatorNotFound
@@ -76,7 +76,7 @@ public enum RuleParsingError: Error, Equatable {
     case equalOperatorNotFound
 }
 
-typealias RuleParsingResult = Rules.Result<RuleParsingError, Rule>
+typealias HumanRuleParsingResult = Rules.Result<HumanRuleParsingError, Rule>
 
 // MARK: - Parsing textual `Rule`s
 
@@ -84,7 +84,7 @@ typealias RuleParsingResult = Rules.Result<RuleParsingError, Rule>
 // unless you cannot use this code to convert your textual rule files to JSON.
 
 /// This parser is not completely finished, it's not quite robust enough
-func parse(humanRule: String) -> RuleParsingResult {
+func parse(humanRule: String) -> HumanRuleParsingResult {
     // right now this parses:
     //   priority: predicate => question = answer
     // eventually it will support:
