@@ -74,9 +74,10 @@ public enum HumanRuleParsingError: Error, Equatable {
     case implicationOperatorNotFound
     case invalidPredicate(ConversionError)
     case equalOperatorNotFound
+    case invalidLine
 }
 
-typealias HumanRuleParsingResult = Rules.Result<HumanRuleParsingError, Rule>
+public typealias HumanRuleParsingResult = Rules.Result<HumanRuleParsingError, Rule>
 
 // MARK: - Parsing textual `Rule`s
 
@@ -84,7 +85,7 @@ typealias HumanRuleParsingResult = Rules.Result<HumanRuleParsingError, Rule>
 // unless you cannot use this code to convert your textual rule files to JSON.
 
 /// This parser is not completely finished, it's not quite robust enough
-func parse(humanRule: String) -> HumanRuleParsingResult {
+public func parse(humanRule: String) -> HumanRuleParsingResult {
     // right now this parses:
     //   priority: predicate => question = answer
     // eventually it will support:
@@ -132,6 +133,47 @@ func parse(humanRule: String) -> HumanRuleParsingResult {
             )
         )
     }
+}
+
+public struct HumanRuleFileContentsParsingError: Error, Equatable {
+    public let lineNumber: Int
+    public let line: String
+    public let error: HumanRuleParsingError
+
+    public init(_ lineNumber: Int, _ line: String, _ error: HumanRuleParsingError) {
+        self.lineNumber = lineNumber
+        self.line = line
+        self.error = error
+    }
+
+    public var localizedDescription: String {
+        return error.localizedDescription
+    }
+}
+
+public func parse(humanRuleFileContents content: String) -> Rules.Result<[HumanRuleFileContentsParsingError], [Rule]> {
+    let digits: [Character] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    var rules: [Rule] = []
+    var errors: [HumanRuleFileContentsParsingError] = []
+    for case let (lineNumber, line) in content.split(separator: "\n").enumerated() {
+        let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+        guard let firstChar = trimmedLine.first else {
+            continue
+        }
+        if digits.contains(firstChar) {
+            switch parse(humanRule: trimmedLine) {
+            case .failed(let error):
+                errors.append(.init(lineNumber + 1, String(line), error))
+            case .success(let rule):
+                rules.append(rule)
+            }
+        } else if trimmedLine.hasPrefix("//") {
+            continue
+        } else {
+            errors.append(.init(lineNumber + 1, String(line), .invalidLine))
+        }
+    }
+    return errors.isEmpty ? .success(rules) : .failed(errors)
 }
 
 //  Created by Jim Roepcke on 2018-06-24.

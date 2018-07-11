@@ -57,6 +57,56 @@ class RuleTests: QuickSpec {
                     }
                 }
             }
+
+            describe("parse(humanRuleFileContents:)") {
+
+                it("parses an empty file") {
+                    expect(parse(humanRuleFileContents: "")) == .success([])
+                }
+
+                it("parses a file with one comment") {
+                    let sut = "// a comment"
+                    expect(parse(humanRuleFileContents: sut)) == .success([])
+                }
+
+                it("parses a file with one line") {
+                    let sut = "10: TRUEPREDICATE => jim = roepcke"
+                    let expected = Rule(
+                        priority: 10,
+                        predicate: .true,
+                        question: "jim",
+                        answer: "roepcke",
+                        assignment: nil
+                    )
+                    expect(parse(humanRuleFileContents: sut)) == .success([expected])
+                }
+
+                it("parses a file with two lines") {
+                    let line = "10: TRUEPREDICATE => jim = roepcke"
+                    let sut = "\(line)\n\(line)"
+                    let expected = Rule(
+                        priority: 10,
+                        predicate: .true,
+                        question: "jim",
+                        answer: "roepcke",
+                        assignment: nil
+                    )
+                    expect(parse(humanRuleFileContents: sut)) == .success([expected, expected])
+                }
+
+                it("parses a file with two lines and comments") {
+                    let line = "10: TRUEPREDICATE => jim = roepcke"
+                    let sut = "\t// a comment\n\(line)\n// a comment\n\(line)\n// another comment"
+                    let expected = Rule(
+                        priority: 10,
+                        predicate: .true,
+                        question: "jim",
+                        answer: "roepcke",
+                        assignment: nil
+                    )
+                    expect(parse(humanRuleFileContents: sut)) == .success([expected, expected])
+                }
+            }
         }
     }
 }
