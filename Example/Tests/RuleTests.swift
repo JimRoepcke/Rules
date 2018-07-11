@@ -21,15 +21,39 @@ class RuleTests: QuickSpec {
             describe("parse(humanRule:)") {
 
                 it("parses?") {
-                    let sut = "10: TRUEPREDICATE => question = answer"
+                    let sut = "10: TRUEPREDICATE => jim = roepcke"
                     let rule = parse(humanRule: sut)
                     switch rule {
                     case .failed(let error): fail("\(error)")
                     case .success(let rule):
                         expect(rule.priority) == 10
                         expect(rule.predicate) == .true
-                        expect(rule.question) == "question"
-                        expect(rule.answer) == "answer"
+                        expect(rule.question) == "jim"
+                        expect(rule.answer) == "roepcke"
+                    }
+                }
+
+                it("parses a complex predicate") {
+                    let sut = "10: (firstName = 'Jim' AND lastName = 'Roepcke') OR (city = 'Edmonton') => favouriteTeam = Oilers"
+                    let rule = parse(humanRule: sut)
+                    switch rule {
+                    case .failed(let error): fail("\(error)")
+                    case .success(let rule):
+                        expect(rule.priority) == 10
+                        expect(rule.predicate) == RulesPredicate.or(
+                            [
+                                .and(
+                                    [
+                                        .comparison(lhs: .question("firstName"), op: .isEqualTo, rhs: .answer(.init(comparable: "Jim"))),
+                                        .comparison(lhs: .question("lastName"), op: .isEqualTo, rhs: .answer(.init(comparable: "Roepcke")))
+                                    ]
+                                ),
+                                .comparison(lhs: .question("city"), op: .isEqualTo, rhs: .answer(.init(comparable: "Edmonton")))
+                            ]
+                        )
+                        expect(rule.question) == "favouriteTeam"
+                        expect(rule.answer) == "Oilers"
+                        expect(rule.assignment).to(beNil())
                     }
                 }
             }
