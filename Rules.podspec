@@ -9,18 +9,36 @@
 Pod::Spec.new do |s|
   s.name             = 'Rules'
   s.version          = '0.1.0'
-  s.summary          = 'A basic but still powerful rule engine'
-
-# This description is used to generate tags and improve search results.
-#   * Think: What does it do? Why did you write it? What is the focus?
-#   * Try to keep it short, snappy and to the point.
-#   * Write the description between the DESC delimiters below.
-#   * Finally, don't worry about the indent, CocoaPods strips it!
-
+  s.summary          = 'A forward-chaining inference engine rule engine'
   s.description      = <<-DESC
-A basic but still powerful rule engine.
+Rules provides a simple forward-chaining inference rule engine that is configurable at runtime.
 
-Rules can be added at runtime, and generated programatically.
+When you provide a set of _known facts_, and a set of _rules_, _inferred facts_ 
+can be determined.
+
+For example:
+
+- _known fact_: the sky is blue
+- _rule_: if the sky is blue, then the weather is sunny
+- _inferrable fact_: the weather is sunny
+
+You you make much more complicated rules than this, which are
+based on more facts, even based on inferred facts.
+
+For example:
+
+- _known fact_: the sky is blue
+- _known fact_: the season is summer
+- _rule_: if the sky is blue, then the weather is sunny
+_ _rule_: if true, the beach is empty (this is a fallback rule)
+- _rule_: if the weather is sunny and the season is summer, then the beach is full
+- _inferred fact_: the beach is full
+
+- _known fact_: the season is autumn
+- _inferred fact_: the beach is empty
+
+Rules can be specified using a simple textual format, and can be decoded from JSON
+to load into a `Brain`.
                        DESC
 
   s.homepage         = 'https://github.com/JimRoepcke/Rules'
