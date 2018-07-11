@@ -35,7 +35,7 @@
 /// questions changed.
 ///
 /// - note: a `Rule` is invalid if its `predicate` contains its `question`.
-public struct Rule {
+public struct Rule: Equatable, Codable {
 
     /// Higher priority `Rule`s have their `predicate` checked before `Rules`
     /// with lower `priority`.
