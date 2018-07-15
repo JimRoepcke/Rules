@@ -1,0 +1,3 @@
+0: true => favouriteTeam = Capitals
+10: (firstName = 'Jim' AND lastName = 'Roepcke') OR (city = 'Edmonton') => favouriteTeam = Oilers
+10: (firstName = 'Xavier' AND lastName = 'Roepcke') OR (city = 'Tampa Bay') => favouriteTeam = Lightning

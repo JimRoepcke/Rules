@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:../TextRulesToJSON/TextRulesToJSON.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:Rules.xcodeproj">
    </FileRef>
    <FileRef
