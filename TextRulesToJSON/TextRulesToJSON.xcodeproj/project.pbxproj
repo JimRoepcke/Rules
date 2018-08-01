@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		384741DA20FAC05800768E5E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741D920FAC05800768E5E /* main.swift */; };
-		384741F020FAC14000768E5E /* Rules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741EB20FAC14000768E5E /* Rules.swift */; };
-		384741F120FAC14000768E5E /* Predicate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741EC20FAC14000768E5E /* Predicate.swift */; };
-		384741F220FAC14000768E5E /* Brain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741ED20FAC14000768E5E /* Brain.swift */; };
-		384741F320FAC14000768E5E /* Facts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741EE20FAC14000768E5E /* Facts.swift */; };
-		384741F420FAC14000768E5E /* Rule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741EF20FAC14000768E5E /* Rule.swift */; };
+		FABBC52E21124F1200D66AEB /* Facts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52921124F1200D66AEB /* Facts.swift */; };
+		FABBC52F21124F1200D66AEB /* Predicate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52A21124F1200D66AEB /* Predicate.swift */; };
+		FABBC53021124F1200D66AEB /* Rule.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52B21124F1200D66AEB /* Rule.swift */; };
+		FABBC53121124F1200D66AEB /* Rules.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52C21124F1200D66AEB /* Rules.swift */; };
+		FABBC53221124F1200D66AEB /* Brain.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52D21124F1200D66AEB /* Brain.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -30,11 +30,11 @@
 /* Begin PBXFileReference section */
 		384741D620FAC05800768E5E /* TextRulesToJSON */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = TextRulesToJSON; sourceTree = BUILT_PRODUCTS_DIR; };
 		384741D920FAC05800768E5E /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		384741EB20FAC14000768E5E /* Rules.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Rules.swift; path = ../../Rules/Classes/Rules.swift; sourceTree = "<group>"; };
-		384741EC20FAC14000768E5E /* Predicate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Predicate.swift; path = ../../Rules/Classes/Predicate.swift; sourceTree = "<group>"; };
-		384741ED20FAC14000768E5E /* Brain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Brain.swift; path = ../../Rules/Classes/Brain.swift; sourceTree = "<group>"; };
-		384741EE20FAC14000768E5E /* Facts.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Facts.swift; path = ../../Rules/Classes/Facts.swift; sourceTree = "<group>"; };
-		384741EF20FAC14000768E5E /* Rule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Rule.swift; path = ../../Rules/Classes/Rule.swift; sourceTree = "<group>"; };
+		FABBC52921124F1200D66AEB /* Facts.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Facts.swift; path = ../../Rules/Sources/Rules/Facts.swift; sourceTree = "<group>"; };
+		FABBC52A21124F1200D66AEB /* Predicate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Predicate.swift; path = ../../Rules/Sources/Rules/Predicate.swift; sourceTree = "<group>"; };
+		FABBC52B21124F1200D66AEB /* Rule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Rule.swift; path = ../../Rules/Sources/Rules/Rule.swift; sourceTree = "<group>"; };
+		FABBC52C21124F1200D66AEB /* Rules.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Rules.swift; path = ../../Rules/Sources/Rules/Rules.swift; sourceTree = "<group>"; };
+		FABBC52D21124F1200D66AEB /* Brain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Brain.swift; path = ../../Rules/Sources/Rules/Brain.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,12 +67,12 @@
 		384741D820FAC05800768E5E /* TextRulesToJSON */ = {
 			isa = PBXGroup;
 			children = (
-				384741ED20FAC14000768E5E /* Brain.swift */,
-				384741EE20FAC14000768E5E /* Facts.swift */,
-				384741EC20FAC14000768E5E /* Predicate.swift */,
-				384741EF20FAC14000768E5E /* Rule.swift */,
-				384741EB20FAC14000768E5E /* Rules.swift */,
 				384741D920FAC05800768E5E /* main.swift */,
+				FABBC52D21124F1200D66AEB /* Brain.swift */,
+				FABBC52921124F1200D66AEB /* Facts.swift */,
+				FABBC52A21124F1200D66AEB /* Predicate.swift */,
+				FABBC52B21124F1200D66AEB /* Rule.swift */,
+				FABBC52C21124F1200D66AEB /* Rules.swift */,
 			);
 			path = TextRulesToJSON;
 			sourceTree = "<group>";
@@ -135,11 +135,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				384741DA20FAC05800768E5E /* main.swift in Sources */,
-				384741F320FAC14000768E5E /* Facts.swift in Sources */,
-				384741F120FAC14000768E5E /* Predicate.swift in Sources */,
-				384741F420FAC14000768E5E /* Rule.swift in Sources */,
-				384741F220FAC14000768E5E /* Brain.swift in Sources */,
-				384741F020FAC14000768E5E /* Rules.swift in Sources */,
+				FABBC53021124F1200D66AEB /* Rule.swift in Sources */,
+				FABBC52F21124F1200D66AEB /* Predicate.swift in Sources */,
+				FABBC52E21124F1200D66AEB /* Facts.swift in Sources */,
+				FABBC53221124F1200D66AEB /* Brain.swift in Sources */,
+				FABBC53121124F1200D66AEB /* Rules.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
