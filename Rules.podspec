@@ -48,7 +48,7 @@ to load into a `Brain`.
 
   s.ios.deployment_target = '9.3'
 
-  s.source_files = 'Rules/Classes/**/*'
+  s.source_files = 'Rules/Sources/**/*'
   
   # s.resource_bundles = {
   #   'Rules' => ['Rules/Assets/*.png']
