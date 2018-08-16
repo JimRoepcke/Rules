@@ -78,7 +78,7 @@ class RuleTests: QuickSpec {
                         answer: "roepcke",
                         assignment: nil
                     )
-                    expect(parse(humanRuleFileContents: sut)) == .success([expected])
+                    expect(parse(humanRuleFileContents: sut)) == .success([.init(lineNumber: 1, line: sut, rule: expected)])
                 }
 
                 it("parses a file with two lines") {
@@ -91,7 +91,9 @@ class RuleTests: QuickSpec {
                         answer: "roepcke",
                         assignment: nil
                     )
-                    expect(parse(humanRuleFileContents: sut)) == .success([expected, expected])
+                    let parsed1 = ParsedHumanRule(lineNumber: 1, line: line, rule: expected)
+                    let parsed2 = ParsedHumanRule(lineNumber: 2, line: line, rule: expected)
+                    expect(parse(humanRuleFileContents: sut)) == .success([parsed1, parsed2])
                 }
 
                 it("parses a file with two lines and comments") {
@@ -104,7 +106,9 @@ class RuleTests: QuickSpec {
                         answer: "roepcke",
                         assignment: nil
                     )
-                    expect(parse(humanRuleFileContents: sut)) == .success([expected, expected])
+                    let parsed2 = ParsedHumanRule(lineNumber: 2, line: line, rule: expected)
+                    let parsed4 = ParsedHumanRule(lineNumber: 4, line: line, rule: expected)
+                    expect(parse(humanRuleFileContents: sut)) == .success([parsed2, parsed4])
                 }
             }
         }

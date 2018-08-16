@@ -148,7 +148,7 @@ public class Brain {
     }
 
     /// This is basically a `String`, but it's more type-safe.
-    public struct Assignment: Hashable, Codable, ExpressibleByStringLiteral {
+    public struct Assignment: Hashable, Codable, ExpressibleByStringLiteral, CustomStringConvertible, CustomDebugStringConvertible {
         public let identifier: String
 
         public typealias StringLiteralType = String
@@ -170,6 +170,9 @@ public class Brain {
             var container = encoder.singleValueContainer()
             try container.encode(identifier)
         }
+
+        public var description: String { return identifier }
+        public var debugDescription: String { return identifier }
     }
 
     /// If an `Assignment` cannot provide a `Facts.AnswerWithDependencies`, it
