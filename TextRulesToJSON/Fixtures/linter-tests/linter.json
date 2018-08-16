@@ -1,0 +1,11 @@
+{
+  "lhs": {
+    "firstName": ["Jim", "Cheryl", "Cyan", "Xavier"],
+    "lastName": "string",
+    "age": "int"
+  },
+  "rhs": {
+    "favouriteTeam": ["Capitals", "Oilers", "Lightning", "Canucks"],
+    "favouritePlayer": "any"
+  }
+}

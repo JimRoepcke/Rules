@@ -1,0 +1,8 @@
+0: true => favouriteTeam = X
+10: (firstName = 'Jim' AND lastName = 'Roepcke') OR (city = 'Edmonton') => favouriteTeam = Oilers
+10: (firstName = 'Xavier' AND lastName = 'Roepcke') OR (city = 'Tampa Bay') => favouriteTeam = Lightning
+10: (firstName = 'Bob' AND lastName = 'Roepcke') OR (city = 'Tampa Bay') => favouriteTeam = Lightning
+10: firstName < true => shouldnot = work
+10: true < true => shouldnot = workeither
+10: true < true => shouldnot = workeither
+10: age < 10 => kid = true

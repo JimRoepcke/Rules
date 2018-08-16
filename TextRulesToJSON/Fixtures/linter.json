@@ -1,0 +1,10 @@
+{
+  "lhs": {
+    "firstName": ["Jim", "Cheryl", "Cyan", "Xavier"],
+    "lastName": "string",
+    "city": "string"
+  },
+  "rhs": {
+    "favouriteTeam": ["Capitals", "Oilers", "Lightning", "Canucks"]
+  }
+}

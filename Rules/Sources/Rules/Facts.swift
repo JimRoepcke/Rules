@@ -35,7 +35,7 @@ public class Facts {
     }
 
     /// This is basically a `String`, but it's more type-safe.
-    public struct Question: Hashable, Codable, ExpressibleByStringLiteral {
+    public struct Question: Hashable, Codable, ExpressibleByStringLiteral, CustomStringConvertible, CustomDebugStringConvertible {
         public let identifier: String
 
         public typealias StringLiteralType = String
@@ -57,6 +57,9 @@ public class Facts {
             var container = encoder.singleValueContainer()
             try container.encode(identifier)
         }
+
+        public var description: String { return identifier }
+        public var debugDescription: String { return identifier }
     }
 
     /// A `value` provided to `Facts` either by:

@@ -151,11 +151,18 @@ public struct HumanRuleFileContentsParsingError: Error, Equatable {
     }
 }
 
-public func parse(humanRuleFileContents content: String) -> Rules.Result<[HumanRuleFileContentsParsingError], [Rule]> {
+public struct ParsedHumanRule: Equatable {
+    public let lineNumber: Int
+    public let line: String
+    public let rule: Rule
+}
+
+public func parse(humanRuleFileContents content: String) -> Rules.Result<[HumanRuleFileContentsParsingError], [ParsedHumanRule]> {
     let digits: [Character] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    var rules: [Rule] = []
+    var rules: [ParsedHumanRule] = []
     var errors: [HumanRuleFileContentsParsingError] = []
-    for case let (lineNumber, line) in content.split(separator: "\n").enumerated() {
+    for case let (offset, line) in content.split(separator: "\n").enumerated() {
+        let lineNumber = offset + 1
         let trimmedLine = line.trimmingCharacters(in: .whitespaces)
         guard let firstChar = trimmedLine.first else {
             continue
@@ -163,14 +170,14 @@ public func parse(humanRuleFileContents content: String) -> Rules.Result<[HumanR
         if digits.contains(firstChar) {
             switch parse(humanRule: trimmedLine) {
             case .failed(let error):
-                errors.append(.init(lineNumber + 1, String(line), error))
+                errors.append(.init(lineNumber, String(line), error))
             case .success(let rule):
-                rules.append(rule)
+                rules.append(.init(lineNumber: lineNumber, line: String(line), rule: rule))
             }
         } else if trimmedLine.hasPrefix("//") {
             continue
         } else {
-            errors.append(.init(lineNumber + 1, String(line), .invalidLine))
+            errors.append(.init(lineNumber, String(line), .invalidLine))
         }
     }
     return errors.isEmpty ? .success(rules) : .failed(errors)
