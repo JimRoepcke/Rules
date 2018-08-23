@@ -73,7 +73,7 @@ public class Facts {
         public let _isEqual: ((Answer) -> Bool)?
         public let _isLessThan: ((Answer) -> Bool)?
 
-        init<T: Equatable>(equatable value: T) {
+        public init<T: Equatable>(equatable value: T) {
             self.value = value
             self._isEquatableTo = Answer.isEquatable(to: value)
             self._isComparableTo = nil
@@ -81,7 +81,7 @@ public class Facts {
             self._isLessThan = nil
         }
 
-        init<T: Comparable>(comparable value: T) {
+        public init<T: Comparable>(comparable value: T) {
             self.value = value
             self._isEquatableTo = Answer.isEquatable(to: value)
             self._isComparableTo = Answer.isComparable(to: value)
