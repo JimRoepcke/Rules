@@ -37,6 +37,27 @@ public enum Rules {
             case .success(let v): return .success(success(v))
             }
         }
+
+        public func flattenSuccess<U>() -> Result<E, U> where V == Result<E, U> {
+            switch self {
+            case let .success(.success(value)): return .success(value)
+            case let .success(.failed(error)): return .failed(error)
+            case let .failed(error): return .failed(error)
+            }
+        }
+
+        public func mapSuccess<U>(_ f: (V) -> U) -> Result<E, U> {
+            switch self {
+            case let .failed(error):
+                return .failed(error)
+            case let .success(value):
+                return .success(f(value))
+            }
+        }
+
+        public func flatMapSuccess<U>(_ f: (V) -> Result<E, U>) -> Result<E, U> {
+            return mapSuccess(f).flattenSuccess()
+        }
     }
 
     /// The canonical identity function. Simply returns the value it's given.
