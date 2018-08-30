@@ -187,6 +187,15 @@ public class Facts {
 
     public func know(answer: Answer, forQuestion question: Question) {
         known[question] = answer.asAnswerWithDependencies()
+        forget(inferredAnswersDependentOn: question)
+    }
+
+    public func forget(answerForQuestion question: Question) {
+        known.removeValue(forKey: question)
+        forget(inferredAnswersDependentOn: question)
+    }
+
+    func forget(inferredAnswersDependentOn question: Question) {
         for inferredQuestionDependentOnAnsweredQuestion in (dependencies[question] ?? []) {
             inferred.removeValue(forKey: inferredQuestionDependentOnAnsweredQuestion)
         }
