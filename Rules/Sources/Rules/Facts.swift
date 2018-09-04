@@ -217,6 +217,7 @@ public class Facts {
         case noRuleFound(question: Question)
         case ambiguous(question: Question)
         case assignmentFailed(Brain.AssignmentError)
+        case answerTypeDoesNotMatchAskType(Answer)
     }
 
     public func ask(question: Question) -> AnswerWithDependenciesResult {
@@ -229,6 +230,37 @@ public class Facts {
                 onFailure: Rules.id,
                 onSuccess: Fns.cache(question: question, given: self)
         )
+    }
+
+    /// Convenience method for `know` and `forget` that calls one or the other
+    /// depending on whether `answer` is `.some(T)` or `.none`.
+    public func set<T>(answer: T?, forQuestion question: Question) where T: Comparable {
+        return answer
+            .map { know(answer: .init(comparable: $0), forQuestion: question) }
+            ?? forget(answerForQuestion: question)
+    }
+
+    /// Convenience method for `know` and `forget` that calls one or the other
+    /// depending on whether `answer` is `.some(T)` or `.none`.
+    public func set<T>(answer: T?, forQuestion question: Question) where T: Equatable {
+        return answer
+            .map { know(answer: .init(equatable: $0), forQuestion: question) }
+            ?? forget(answerForQuestion: question)
+    }
+
+    /// depending on whether `answer` is `.some(T)` or `.none`.
+    public func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, T> {
+            return (answerWithDependencies.value as? T)
+                .map { .success($0) }
+                ?? .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+        }
+        switch ask(question: question) {
+        case let .failed(error):
+            return .failed(error)
+        case let .success(answerWithDependencies):
+            return cast(answerWithDependencies)
+        }
     }
 }
 
