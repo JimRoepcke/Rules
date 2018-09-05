@@ -46,7 +46,8 @@ to load into a `Brain`.
   s.author           = { 'Jim Roepcke' => 'jim@roepcke.com' }
   s.source           = { :git => 'https://github.com/JimRoepcke/Rules.git', :tag => s.version.to_s }
 
-  s.ios.deployment_target = '9.0'
+s.ios.deployment_target = '9.0'
+s.watchos.deployment_target = '2.0'
 
   s.source_files = 'Rules/Sources/**/*'
   
