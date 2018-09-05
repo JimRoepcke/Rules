@@ -1,3 +1,6 @@
 0: true => favouriteTeam = Capitals
+0: true => worstTeam = Oilers
+0: true => massochist = false
 10: (firstName = 'Jim' AND lastName = 'Roepcke') OR (city = 'Edmonton') => favouriteTeam = Oilers
 10: (firstName = 'Xavier' AND lastName = 'Roepcke') OR (city = 'Tampa Bay') => favouriteTeam = Lightning
+10: worstTeam = favouriteTeam => massochist = true

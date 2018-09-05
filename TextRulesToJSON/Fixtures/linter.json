@@ -5,6 +5,8 @@
     "city": "string"
   },
   "rhs": {
-    "favouriteTeam": ["Capitals", "Oilers", "Lightning", "Canucks"]
+    "favouriteTeam": ["Capitals", "Oilers", "Lightning", "Canucks"],
+    "worstTeam": ["Captials", "Oilers", "Lightning", "Canucks"],
+    "massochist": ["true", "false"]
   }
 }
