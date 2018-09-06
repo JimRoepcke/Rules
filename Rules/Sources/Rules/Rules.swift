@@ -83,6 +83,16 @@ public enum Rules {
 
 }
 
+public extension Rules.Result where E == Error {
+    static func result(of f: @escaping () throws -> V) -> Rules.Result<E, V> {
+        do {
+            return .success(try f())
+        } catch {
+            return .failed(error)
+        }
+    }
+}
+
 extension Rules.Result: Equatable where E: Equatable, V: Equatable {
 
     public static func == <E: Equatable, V: Equatable>(lhs: Rules.Result<E, V>, rhs: Rules.Result<E, V>) -> Bool {

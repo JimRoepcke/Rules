@@ -15,19 +15,11 @@ func printToStdErr(_ s: String, preamble: String = "TextRulesToJSON: ") {
 }
 
 func dataOf(path: String) -> Rules.Result<Error, Data> {
-    do {
-        return .success(try Data(contentsOf: URL(fileURLWithPath: path)))
-    } catch {
-        return .failed(error)
-    }
+    return .result { try Data(contentsOf: URL(fileURLWithPath: path)) }
 }
 
 func contentsOf(path: String) -> Rules.Result<Error, String> {
-    do {
-        return .success(try String(contentsOf: URL(fileURLWithPath: path), encoding: .utf8))
-    } catch {
-        return .failed(error)
-    }
+    return .result { try String.init(contentsOf: URL(fileURLWithPath: path), encoding: .utf8) }
 }
 
 enum ExitCode: Int32 {
@@ -128,11 +120,7 @@ func convert() -> ExitCode {
 }
 
 func jsonData(rules: [Rule]) -> Rules.Result<Error, Data> {
-    do {
-        return .success(try JSONEncoder().encode(rules))
-    } catch {
-        return .failed(error)
-    }
+    return .result { try JSONEncoder().encode(rules) }
 }
 
 func main() -> ExitCode {
