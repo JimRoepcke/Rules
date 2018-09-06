@@ -39,7 +39,7 @@ class PredicateTests: QuickSpec {
                     case .success(let jsonObject):
                         expect(jsonObject == expected).to(beTrue())
                     }
-            }
+                }
 
                 it("can encode .not(.true)") {
                     let sut = SUT.not(.true)
@@ -66,6 +66,44 @@ class PredicateTests: QuickSpec {
                     case .failed(let error): fail("\(error)")
                     case .success(let jsonObject):
                         expect(jsonObject == expected).to(beTrue())
+                    }
+                }
+
+                context("encoding a custom ComparableAnswer type") {
+
+                    it("can encode a predicate with a .comparable answer") {
+                        let my = MyComparableType(x: 42)
+                        let sut = SUT.comparison(lhs: .question("something"), op: .isLessThan, rhs: .answer(.comparable(my)))
+                        let expected: [AnyHashable: Any] = [
+                            "type": "comparison",
+                            "lhs": ["question": "something"],
+                            "op": "isLessThan",
+                            "rhs": ["answer": ["comparableType": "MyComparableType", "comparable": [["x": 42]]]]
+                        ]
+                        switch jsonObject(for: sut) {
+                        case .failed(let error): fail("\(error)")
+                        case .success(let jsonObject):
+                            expect(jsonObject == expected).to(beTrue())
+                        }
+                    }
+                }
+
+                context("encoding a custom EquatableAnswer type") {
+
+                    it("can encode a predicate with a .equatable answer") {
+                        let my = MyEquatableType(x: 42)
+                        let sut = SUT.comparison(lhs: .question("something"), op: .isEqualTo, rhs: .answer(.equatable(my)))
+                        let expected: [AnyHashable: Any] = [
+                            "type": "comparison",
+                            "lhs": ["question": "something"],
+                            "op": "isEqualTo",
+                            "rhs": ["answer": ["equatableType": "MyEquatableType", "equatable": [["x": 42]]]]
+                        ]
+                        switch jsonObject(for: sut) {
+                        case .failed(let error): fail("\(error)")
+                        case .success(let jsonObject):
+                            expect(jsonObject == expected).to(beTrue())
+                        }
                     }
                 }
             }
@@ -105,6 +143,54 @@ class PredicateTests: QuickSpec {
                     case .success(.failed(let error)): fail("\(error)")
                     case .success(.success(let predicate)):
                         expect(predicate) == sut
+                    }
+                }
+
+                context("decoding a custom ComparableAnswer type") {
+
+                    beforeEach {
+                        Facts.Answer.register(comparableAnswerType: MyComparableType.self)
+                    }
+
+                    afterEach {
+                        Facts.Answer.deregister(comparableAnswerType: MyComparableType.self)
+                    }
+
+                    it("can decode a predicate with a .comparable answer") {
+                        let my = MyComparableType(x: 42)
+                        let sut = SUT.comparison(lhs: .question("something"), op: .isLessThan, rhs: .answer(.comparable(my)))
+                        let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
+                            = data(for: sut).bimap(Rules.id, decoded(from:))
+                        switch result {
+                        case .failed(let error): fail("\(error)")
+                        case .success(.failed(let error)): fail("\(error)")
+                        case .success(.success(let predicate)):
+                            expect(predicate) == sut
+                        }
+                    }
+                }
+
+                context("decoding a custom EquatableAnswer type") {
+
+                    beforeEach {
+                        Facts.Answer.register(equatableAnswerType: MyEquatableType.self)
+                    }
+
+                    afterEach {
+                        Facts.Answer.deregister(equatableAnswerType: MyEquatableType.self)
+                    }
+
+                    it("can decode a predicate with a .equatable answer") {
+                        let my = MyEquatableType(x: 42)
+                        let sut = SUT.comparison(lhs: .question("something"), op: .isEqualTo, rhs: .answer(.equatable(my)))
+                        let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
+                            = data(for: sut).bimap(Rules.id, decoded(from:))
+                        switch result {
+                        case .failed(let error): fail("\(error)")
+                        case .success(.failed(let error)): fail("\(error)")
+                        case .success(.success(let predicate)):
+                            expect(predicate) == sut
+                        }
                     }
                 }
             }
@@ -216,37 +302,37 @@ class PredicateTests: QuickSpec {
                 }
 
                 it("can check equality of int answers") {
-                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isEqualTo, rhs: .answer(.init(comparable: 0)))
+                    let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isEqualTo, rhs: .answer(.int(0)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
                 it("can check equality of double answers") {
-                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isEqualTo, rhs: .answer(.init(comparable: 0)))
+                    let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isEqualTo, rhs: .answer(.int(0)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
                 it("can check equality of string answers") {
-                    let sut = SUT.comparison(lhs: .answer(.init(comparable: "0")), op: .isEqualTo, rhs: .answer(.init(comparable: "0")))
+                    let sut = SUT.comparison(lhs: .answer(.string("0")), op: .isEqualTo, rhs: .answer(.string("0")))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
                 it("can compare int answers") {
-                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isLessThan, rhs: .answer(.init(comparable: 1)))
+                    let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isLessThan, rhs: .answer(.int(1)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
                 it("can compare double answers") {
-                    let sut = SUT.comparison(lhs: .answer(.init(comparable: 0)), op: .isLessThan, rhs: .answer(.init(comparable: 1)))
+                    let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isLessThan, rhs: .answer(.int(1)))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
 
                 it("can compare string answers") {
-                    let sut = SUT.comparison(lhs: .answer(.init(comparable: "0")), op: .isLessThan, rhs: .answer(.init(comparable: "1")))
+                    let sut = SUT.comparison(lhs: .answer(.string("0")), op: .isLessThan, rhs: .answer(.string("1")))
                     let result = evaluate(predicate: sut, given: .mockf())
                     expect(result) == trueNoKeys
                 }
@@ -254,7 +340,7 @@ class PredicateTests: QuickSpec {
                 it("can check equality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .init(comparable: 0), forQuestion: "test")
+                    facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
@@ -262,7 +348,7 @@ class PredicateTests: QuickSpec {
                 it("can check inequality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isNotEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .init(comparable: 0), forQuestion: "test")
+                    facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: false, dependencies: ["test"]))
                 }
@@ -270,16 +356,16 @@ class PredicateTests: QuickSpec {
                 it("can check equality of different dependencies") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test1")), op: .isEqualTo, rhs: .question(.init(identifier: "test2")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .init(comparable: 0), forQuestion: "test1")
-                    facts.know(answer: .init(comparable: 1), forQuestion: "test2")
+                    facts.know(answer: .int(0), forQuestion: "test1")
+                    facts.know(answer: .int(1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"]))
                 }
 
                 it("can compare a question to an answer") {
-                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .answer(.init(comparable: 0)))
+                    let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .answer(.int(0)))
                     let facts = Facts.mockf()
-                    facts.know(answer: .init(comparable: 0), forQuestion: "test")
+                    facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
@@ -287,7 +373,7 @@ class PredicateTests: QuickSpec {
                 it("can compare a predicate to a question") {
                     let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
                     let facts = Facts.mockf()
-                    facts.know(answer: .init(equatable: true), forQuestion: "test")
+                    facts.know(answer: .bool(true), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
@@ -328,7 +414,7 @@ class PredicateTests: QuickSpec {
                                 .comparison(
                                     lhs: .question(.init(identifier: "someQuestion")),
                                     op: .isEqualTo,
-                                    rhs: .answer(.init(comparable: "someAnswer"))
+                                    rhs: .answer(.string("someAnswer"))
                                 ),
                                 .true
                             ]
@@ -344,7 +430,7 @@ class PredicateTests: QuickSpec {
                         .comparison(
                             lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
-                            rhs: .answer(.init(comparable: -42))
+                            rhs: .answer(.int(-42))
                         )
                     )
                 }
@@ -383,7 +469,7 @@ class PredicateTests: QuickSpec {
                         .comparison(
                             lhs: .question(.init(identifier: "someQuestion")),
                             op: .isEqualTo,
-                            rhs: .answer(.init(comparable: 2.5))
+                            rhs: .answer(.double(2.5))
                         )
                     )
                 }
@@ -394,9 +480,9 @@ class PredicateTests: QuickSpec {
                     let predicate = convert(ns: ns)
                     expect(predicate) == .success(
                         .comparison(
-                            lhs: .answer(.init(comparable: 1.5)),
+                            lhs: .answer(.double(1.5)),
                             op: .isLessThan,
-                            rhs: .answer(.init(comparable: 2.5))
+                            rhs: .answer(.double(2.5))
                         )
                     )
                 }
@@ -478,6 +564,118 @@ func decoded<T: Decodable>(from data: Data) -> RulesDecodingResult<T> {
     } catch {
         return .failed(.unknown)
     }
+}
+
+private struct MyComparableType: ComparableAnswer, Codable, Comparable {
+
+    let x: Int
+
+    init(x: Int) {
+        self.x = x
+    }
+
+    // MARK: Equatable
+    static func == (lhs: MyComparableType, rhs: MyComparableType) -> Bool {
+        return lhs.x == rhs.x
+    }
+
+    // MARK: Comparable
+
+    static func < (lhs: MyComparableType, rhs: MyComparableType) -> Bool {
+        return lhs.x < rhs.x
+    }
+
+    // MARK: Codable
+
+    enum CodingKeys: String, CodingKey {
+        case myType
+        case x
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.x = try container.decode(Int.self, forKey: .x)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(x, forKey: .x)
+    }
+
+    // MARK: ComparableAnswer
+
+    func isEqualTo(comparableAnswer: ComparableAnswer) -> Facts.Answer.ComparisonResult {
+        return (comparableAnswer as? MyComparableType)
+            .map { .success(self == $0) }
+            ?? .failed(.typeMismatch)
+    }
+
+    func isLessThan(comparableAnswer: ComparableAnswer) -> Facts.Answer.ComparisonResult {
+        return (comparableAnswer as? MyComparableType)
+            .map { .success(self < $0) }
+            ?? .failed(.typeMismatch)
+    }
+
+    static var comparableAnswerTypeName: String { return "MyComparableType" }
+
+    public func encodeComparableAnswer(to encoder: Encoder, container: inout UnkeyedEncodingContainer) throws {
+        try container.encode(self)
+    }
+
+    static func decodeComparableAnswer(from decoder: Decoder, container: inout UnkeyedDecodingContainer) throws -> ComparableAnswer {
+        return try container.decode(MyComparableType.self)
+    }
+
+}
+
+private struct MyEquatableType: EquatableAnswer, Codable, Equatable {
+
+    let x: Int
+
+    init(x: Int) {
+        self.x = x
+    }
+
+    // MARK: Equatable
+    static func == (lhs: MyEquatableType, rhs: MyEquatableType) -> Bool {
+        return lhs.x == rhs.x
+    }
+
+    // MARK: Codable
+
+    enum CodingKeys: String, CodingKey {
+        case myType
+        case x
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.x = try container.decode(Int.self, forKey: .x)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(x, forKey: .x)
+    }
+
+    // MARK: EquatableAnswer
+
+    func isEqualTo(equatableAnswer: EquatableAnswer) -> Facts.Answer.ComparisonResult {
+        return (equatableAnswer as? MyEquatableType)
+            .map { .success(self == $0) }
+            ?? .failed(.typeMismatch)
+    }
+
+    static var equatableAnswerTypeName: String { return "MyEquatableType" }
+
+    public func encodeEquatableAnswer(to encoder: Encoder, container: inout UnkeyedEncodingContainer) throws {
+        try container.encode(self)
+    }
+
+    static func decodeEquatableAnswer(from decoder: Decoder, container: inout UnkeyedDecodingContainer) throws -> EquatableAnswer {
+        return try container.decode(MyEquatableType.self)
+    }
+
 }
 
 //  Created by Jim Roepcke on 2018-06-24.

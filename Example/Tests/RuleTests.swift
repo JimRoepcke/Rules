@@ -44,11 +44,11 @@ class RuleTests: QuickSpec {
                             [
                                 .and(
                                     [
-                                        .comparison(lhs: .question("firstName"), op: .isEqualTo, rhs: .answer(.init(comparable: "Jim"))),
-                                        .comparison(lhs: .question("lastName"), op: .isEqualTo, rhs: .answer(.init(comparable: "Roepcke")))
+                                        .comparison(lhs: .question("firstName"), op: .isEqualTo, rhs: .answer(.string("Jim"))),
+                                        .comparison(lhs: .question("lastName"), op: .isEqualTo, rhs: .answer(.string("Roepcke")))
                                     ]
                                 ),
-                                .comparison(lhs: .question("city"), op: .isEqualTo, rhs: .answer(.init(comparable: "Edmonton")))
+                                .comparison(lhs: .question("city"), op: .isEqualTo, rhs: .answer(.string("Edmonton")))
                             ]
                         )
                         expect(rule.question) == "favouriteTeam"

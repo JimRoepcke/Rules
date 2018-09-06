@@ -146,25 +146,34 @@ func checkRHSAnswerTypeIsCorrect(parsed values: [ParsedHumanRule], spec: LinterS
         .compactMap(Rules.id)
 }
 
-func checkLHSAnswerTypesAreCorrect(parsed values: [ParsedHumanRule], spec: LinterSpecification) -> [RuleLint] {
-    func typeName<T>(of x: T) -> String {
-        return String(describing: type(of: x)).lowercased()
+func typeName(of answer: Facts.Answer) -> String {
+    switch answer {
+    case .bool: return "bool"
+    case .double: return "double"
+    case .int: return "int"
+    case .string: return "string"
+    case .comparable(let it): return type(of: it).comparableAnswerTypeName.lowercased()
+    case .equatable(let it): return type(of: it).equatableAnswerTypeName.lowercased()
     }
+}
+
+func checkLHSAnswerTypesAreCorrect(parsed values: [ParsedHumanRule], spec: LinterSpecification) -> [RuleLint] {
     func checkConstraint(for question: Facts.Question, and answer: Facts.Answer, value: ParsedHumanRule) -> [RuleLint] {
         guard let constraint = spec.lhs[question.identifier] else {
             return [(value, "lhs question \(question) not found in the linter file")]
         }
-        switch (constraint, answer.value) {
+        switch (constraint, answer) {
         case (.any, _),
-             (.int, is Int),
-             (.double, is Double),
-             (.string, is String): return []
+             (.bool, .bool),
+             (.int, .int),
+             (.double, .double),
+             (.string, .string): return []
         case (.bool, let x): return [(value, "type mismatch, \(question) should be compared to a bool, not a \(typeName(of: x))")]
         case (.int, let x): return [(value, "type mismatch, \(question) should be compared to an int, not a \(typeName(of: x))")]
         case (.double, let x): return [(value, "type mismatch, \(question) should be compared to a double, not a \(typeName(of: x))")]
         case (.string, let x): return [(value, "type mismatch, \(question) should be compared to a string, not a \(typeName(of: x))")]
-        case (.strings(let strings), let x as String) where strings.contains(x): return []
-        case (.strings(let strings), is String): return [(value, "\(question) may only be compared to one of: \(strings.joined(separator: ", "))")]
+        case (.strings(let strings), .string(let x)) where strings.contains(x): return []
+        case (.strings(let strings), .string): return [(value, "\(question) may only be compared to one of: \(strings.joined(separator: ", "))")]
         case (.strings, let x): return [(value, "type mismatch, \(question) should be compared to a string, not a \(typeName(of: x))")]
         }
     }
@@ -193,27 +202,27 @@ func checkLHSAnswerTypesAreCorrect(parsed values: [ParsedHumanRule], spec: Linte
             case .string, .strings:
                 return ps + [(value, "type mismatch, \(question) should be a string but it is being compared to a bool")]
             }
-        case .comparison(.answer(let answer), _, .predicate) where answer.value is Bool:
+        case .comparison(.answer(.bool), _, .predicate):
             return []
         case .comparison(.answer(let answer), _, .predicate):
-            return [(value, "type mismatch, comparing a \(typeName(of: answer.value)) to a bool")]
-        case .comparison(.predicate, _, .answer(let answer)) where answer.value is Bool:
+            return [(value, "type mismatch, comparing a \(typeName(of: answer)) to a bool")]
+        case .comparison(.predicate, _, .answer(.bool)):
             return []
         case .comparison(.predicate, _, .answer(let answer)):
-            return [(value, "type mismatch, comparing a \(typeName(of: answer.value)) to a bool")]
+            return [(value, "type mismatch, comparing a \(typeName(of: answer)) to a bool")]
         case .comparison(.question(let question), _, .answer(let answer)):
             return checkConstraint(for: question, and: answer, value: value)
         case .comparison(.answer(let answer), _, .question(let question)):
             return checkConstraint(for: question, and: answer, value: value)
         case .comparison(.question, _, .question):
             return [] // not yet implemented
-        case .comparison(.answer(let left), _, .answer(let right)) where type(of: left.value) == type(of: right.value):
+        case .comparison(.answer(let left), _, .answer(let right)) where typeName(of: left) == typeName(of: right):
             // it could be argued this shouldn't be allowed because it's silly
             // 8 == 8, 8 == 4, 8 < 4, 8 > 4, these are all constants and
             // should not be a part of a rules file
             return []
         case .comparison(.answer(let left), _, .answer(let right)):
-            return [(value, "type mismatch, comparing a \(typeName(of: left.value)) to a \(typeName(of: right.value))")]
+            return [(value, "type mismatch, comparing a \(typeName(of: left)) to a \(typeName(of: right))")]
         }
     }
     func checkLHS(value: ParsedHumanRule) -> [RuleLint] {

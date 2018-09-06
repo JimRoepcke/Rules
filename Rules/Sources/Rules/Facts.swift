@@ -65,32 +65,30 @@ public class Facts {
     /// A `value` provided to `Facts` either by:
     /// - the client of `Facts` as the answer to a question with a known fact
     /// - the receiver's `Brain` as the answer to a question with an inferred fact.
-    public struct Answer: Equatable {
-        public let value: Any
+    public enum Answer: Equatable {
 
-        public let _isEquatableTo: (Answer) -> Bool
-        public let _isComparableTo: ((Answer) -> Bool)?
-        public let _isEqual: ((Answer) -> Bool)?
-        public let _isLessThan: ((Answer) -> Bool)?
-
-        public init<T: Equatable>(equatable value: T) {
-            self.value = value
-            self._isEquatableTo = Answer.isEquatable(to: value)
-            self._isComparableTo = nil
-            self._isEqual = Answer.isEqual(lhs: value)
-            self._isLessThan = nil
-        }
-
-        public init<T: Comparable>(comparable value: T) {
-            self.value = value
-            self._isEquatableTo = Answer.isEquatable(to: value)
-            self._isComparableTo = Answer.isComparable(to: value)
-            self._isEqual = Answer.isEqual(lhs: value)
-            self._isLessThan = Answer.isLess(lhs: value)
-        }
+        case bool(Bool)
+        case double(Double)
+        case int(Int)
+        case string(String)
+        case comparable(ComparableAnswer)
+        case equatable(EquatableAnswer)
 
         public static func == (lhs: Answer, rhs: Answer) -> Bool {
-            return lhs.isEqual(to: rhs)
+            switch (lhs, rhs) {
+            case (.bool(let l), .bool(let r)): return l == r
+            case (.bool, _): return false
+            case (.double(let l), .double(let r)): return l == r
+            case (.double, _): return false
+            case (.int(let l), .int(let r)): return l == r
+            case (.int, _): return false
+            case (.string(let l), .string(let r)): return l == r
+            case (.string, _): return false
+            case (.comparable(let l), .comparable(let r)): return l.isEqualTo(comparableAnswer: r).value ?? false
+            case (.comparable, _): return false
+            case (.equatable(let l), .equatable(let r)): return l.isEqualTo(equatableAnswer: r).value ?? false
+            case (.equatable, _): return false
+            }
         }
         
         init(answerWithDependendOnQuestions: AnswerWithDependencies) {
@@ -101,63 +99,49 @@ public class Facts {
             return .init(answer: self, dependencies: dependencies)
         }
 
-        public func isEquatable(to answer: Answer) -> Bool {
-            return _isEquatableTo(answer)
-        }
+        public typealias ComparisonResult = Rules.Result<Predicate.EvaluationError, Bool>
 
-        public func isEqual(to other: Answer) -> Bool {
-            return _isEqual.map { $0(other) } ?? false
-        }
-
-        public func isNotEqual(to other: Answer) -> Bool {
-            return !isEqual(to: other)
-        }
-
-        public func isComparable(to answer: Answer) -> Bool {
-            return _isComparableTo.map { $0(answer) } ?? false
-        }
-
-        public func isLess(than other: Answer) -> Bool {
-            return _isLessThan.map { $0(other) } ?? false
-        }
-
-        public func isLessThanOrEqual(to other: Answer) -> Bool {
-            return isLess(than:other) || isEqual(to: other)
-        }
-
-        public func isGreater(than other: Answer) -> Bool {
-            return !isLess(than:other)
-        }
-
-        public func isGreaterThanOrEqual(to other: Answer) -> Bool {
-            return isGreater(than: other) || isEqual(to: other)
-        }
-
-        static func isEquatable<T: Equatable>(to answer: T) -> (Answer) -> Bool {
-            return { other in (other.value as? T) != nil }
-        }
-
-        static func isComparable<T: Comparable>(to answer: T) -> (Answer) -> Bool {
-            return { other in (other.value as? T) != nil }
-        }
-
-        static func isEqual<T: Equatable>(lhs: T) -> (Answer) -> Bool {
-            return { rhs in
-                guard let other = rhs.value as? T else {
-                    return false
-                }
-                return lhs == other
+        public func isEqual(to other: Answer) -> ComparisonResult {
+            switch (self, other) {
+            case (.bool(let it), .bool(let other)): return .success(it == other)
+            case (.double(let it), .double(let other)): return .success(it == other)
+            case (.int(let it), .int(let other)): return .success(it == other)
+            case (.string(let it), .string(let other)): return .success(it == other)
+            case (.comparable(let it), .comparable(let other)): return it.isEqualTo(comparableAnswer: other)
+            case (.equatable(let it), .equatable(let other)): return it.isEqualTo(equatableAnswer: other)
+            case (.bool, _), (.double, _), (.int, _), (.string, _), (.comparable, _), (.equatable, _): return .failed(.typeMismatch)
             }
         }
 
-        static func isLess<T: Comparable>(lhs: T) -> (Answer) -> Bool {
-            return { rhs in
-                guard let other = rhs.value as? T else {
-                    return false
-                }
-                return lhs < other
+        public func isNotEqual(to other: Answer) -> ComparisonResult {
+            return isEqual(to: other).mapSuccess(!)
+        }
+
+        public func isLess(than other: Answer) -> ComparisonResult {
+            switch (self, other) {
+            case (.double(let it), .double(let other)): return .success(it < other)
+            case (.int(let it), .int(let other)): return .success(it < other)
+            case (.string(let it), .string(let other)): return .success(it < other)
+            case (.comparable(let it), .comparable(let other)): return it.isLessThan(comparableAnswer: other)
+            case (.bool, _), (.double, _), (.int, _), (.string, _), (.comparable, _), (.equatable, _): return .failed(.typeMismatch)
             }
         }
+
+        public func isLessThanOrEqual(to other: Answer) -> ComparisonResult {
+            return isLess(than: other).flatMapSuccess { lt in
+                if lt { return .success(true) }
+                else { return isEqual(to: other) }
+            }
+        }
+
+        public func isGreater(than other: Answer) -> ComparisonResult {
+            return isLessThanOrEqual(to: other).mapSuccess(!)
+        }
+
+        public func isGreaterThanOrEqual(to other: Answer) -> ComparisonResult {
+            return isLess(than: other).mapSuccess(!)
+        }
+
     }
 
     /// The questions asked while determining the answer to a question.
@@ -167,7 +151,6 @@ public class Facts {
     public struct AnswerWithDependencies: Equatable {
         public let answer: Answer
         public let dependencies: Facts.Dependencies
-        public var value: Any { return answer.value }
     }
 
     public typealias AnswerWithDependenciesResult = Rules.Result<AnswerError, AnswerWithDependencies>
@@ -234,26 +217,26 @@ public class Facts {
 
     /// Convenience method for `know` and `forget` that calls one or the other
     /// depending on whether `answer` is `.some(T)` or `.none`.
-    public func set<T>(answer: T?, forQuestion question: Question) where T: Comparable {
+    public func set<T>(answer: T?, forQuestion question: Question) where T: ComparableAnswer {
         return answer
-            .map { know(answer: .init(comparable: $0), forQuestion: question) }
+            .map { know(answer: .comparable($0), forQuestion: question) }
             ?? forget(answerForQuestion: question)
     }
 
     /// Convenience method for `know` and `forget` that calls one or the other
     /// depending on whether `answer` is `.some(T)` or `.none`.
-    public func set<T>(answer: T?, forQuestion question: Question) where T: Equatable {
+    public func set<T>(answer: T?, forQuestion question: Question) where T: EquatableAnswer {
         return answer
-            .map { know(answer: .init(equatable: $0), forQuestion: question) }
+            .map { know(answer: .equatable($0), forQuestion: question) }
             ?? forget(answerForQuestion: question)
     }
 
-    /// depending on whether `answer` is `.some(T)` or `.none`.
-    public func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> {
-        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, T> {
-            return (answerWithDependencies.value as? T)
-                .map { .success($0) }
-                ?? .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+    public func ask(_ type: Bool.Type, question: Question) -> Rules.Result<AnswerError, Bool> {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, Bool> {
+            if case .bool(let bool) = answerWithDependencies.answer {
+                return .success(bool)
+            }
+            return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
         switch ask(question: question) {
         case let .failed(error):
@@ -262,6 +245,96 @@ public class Facts {
             return cast(answerWithDependencies)
         }
     }
+
+    public func ask(_ type: Int.Type, question: Question) -> Rules.Result<AnswerError, Int> {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, Int> {
+            if case .int(let int) = answerWithDependencies.answer {
+                return .success(int)
+            }
+            return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+        }
+        switch ask(question: question) {
+        case let .failed(error):
+            return .failed(error)
+        case let .success(answerWithDependencies):
+            return cast(answerWithDependencies)
+        }
+    }
+
+    public func ask(_ type: Double.Type, question: Question) -> Rules.Result<AnswerError, Double> {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, Double> {
+            if case .double(let double) = answerWithDependencies.answer {
+                return .success(double)
+            }
+            return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+        }
+        switch ask(question: question) {
+        case let .failed(error):
+            return .failed(error)
+        case let .success(answerWithDependencies):
+            return cast(answerWithDependencies)
+        }
+    }
+
+    public func ask(_ type: String.Type, question: Question) -> Rules.Result<AnswerError, String> {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, String> {
+            if case .string(let string) = answerWithDependencies.answer {
+                return .success(string)
+            }
+            return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+        }
+        switch ask(question: question) {
+        case let .failed(error):
+            return .failed(error)
+        case let .success(answerWithDependencies):
+            return cast(answerWithDependencies)
+        }
+    }
+
+    public func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: ComparableAnswer {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, T> {
+            if case .comparable(let comparable) = answerWithDependencies.answer, let t = comparable as? T {
+                return .success(t)
+            }
+            return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+        }
+        switch ask(question: question) {
+        case let .failed(error):
+            return .failed(error)
+        case let .success(answerWithDependencies):
+            return cast(answerWithDependencies)
+        }
+    }
+
+    public func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: EquatableAnswer {
+        func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, T> {
+            if case .equatable(let equatable) = answerWithDependencies.answer, let t = equatable as? T {
+                return .success(t)
+            }
+            return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
+        }
+        switch ask(question: question) {
+        case let .failed(error):
+            return .failed(error)
+        case let .success(answerWithDependencies):
+            return cast(answerWithDependencies)
+        }
+    }
+}
+
+public protocol EquatableAnswer {
+    func isEqualTo(equatableAnswer: EquatableAnswer) -> Facts.Answer.ComparisonResult
+    func encodeEquatableAnswer(to encoder: Encoder, container: inout UnkeyedEncodingContainer) throws
+    static func decodeEquatableAnswer(from decoder: Decoder, container: inout UnkeyedDecodingContainer) throws -> EquatableAnswer
+    static var equatableAnswerTypeName: String { get }
+}
+
+public protocol ComparableAnswer {
+    func isEqualTo(comparableAnswer: ComparableAnswer) -> Facts.Answer.ComparisonResult
+    func isLessThan(comparableAnswer: ComparableAnswer) -> Facts.Answer.ComparisonResult
+    func encodeComparableAnswer(to encoder: Encoder, container: inout UnkeyedEncodingContainer) throws
+    static func decodeComparableAnswer(from decoder: Decoder, container: inout UnkeyedDecodingContainer) throws -> ComparableAnswer
+    static var comparableAnswerTypeName: String { get }
 }
 
 typealias Fns = FactsFunctions

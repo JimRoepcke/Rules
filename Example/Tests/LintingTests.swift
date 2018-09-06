@@ -35,7 +35,7 @@ class LintingTests: QuickSpec {
                         line: "10: this = 'that' => aQuestion = answer",
                         rule: .init(
                             priority: 10,
-                            predicate: .comparison(lhs: .question("this"), op: .isEqualTo, rhs: .answer(.init(comparable: "that"))),
+                            predicate: .comparison(lhs: .question("this"), op: .isEqualTo, rhs: .answer(.string("that"))),
                             question: "aQuestion",
                             answer: "answer",
                             assignment: nil

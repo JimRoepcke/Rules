@@ -112,35 +112,99 @@ extension Predicate.Expression: Codable {
 }
 
 extension Facts.Answer: Codable {
-    enum CodingKeys: String, CodingKey {
-        case int
+
+    public typealias ComparableAnswerDecoder = (Decoder, inout UnkeyedDecodingContainer) throws -> ComparableAnswer
+    public typealias EquatableAnswerDecoder = (Decoder, inout UnkeyedDecodingContainer) throws -> EquatableAnswer
+
+    public static func register<T>(comparableAnswerType type: T.Type) where T: ComparableAnswer {
+        comparableAnswerDecoders[type.comparableAnswerTypeName] = type.decodeComparableAnswer(from:container:)
+    }
+
+    public static func register<T>(equatableAnswerType type: T.Type) where T: EquatableAnswer {
+        equatableAnswerDecoders[type.equatableAnswerTypeName] = type.decodeEquatableAnswer(from:container:)
+    }
+
+    public static func deregister<T>(comparableAnswerType type: T.Type) where T: ComparableAnswer {
+        comparableAnswerDecoders.removeValue(forKey: type.comparableAnswerTypeName)
+    }
+
+    public static func deregister<T>(equatableAnswerType type: T.Type) where T: EquatableAnswer {
+        equatableAnswerDecoders.removeValue(forKey: type.equatableAnswerTypeName)
+    }
+
+    static var comparableAnswerDecoders: [String: ComparableAnswerDecoder] = [:]
+    static var equatableAnswerDecoders: [String: EquatableAnswerDecoder] = [:]
+
+    public enum CodingKeys: String, CodingKey {
+        case bool
         case double
+        case int
         case string
+        case comparableType
+        case comparable
+        case equatableType
+        case equatable
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        if container.contains(.int) {
-            self.init(equatable: try container.decode(Int.self, forKey: .int))
+        if container.contains(.bool) {
+            self = .bool(try container.decode(Bool.self, forKey: .bool))
+        } else if container.contains(.int) {
+            self = .int(try container.decode(Int.self, forKey: .int))
         } else if container.contains(.double) {
-            self.init(comparable: try container.decode(Double.self, forKey: .double))
+            self = .double(try container.decode(Double.self, forKey: .double))
         } else if container.contains(.string) {
-            self.init(comparable: try container.decode(String.self, forKey: .string))
+            self = .string(try container.decode(String.self, forKey: .string))
+        } else if container.contains(.comparableType) {
+            let type = try container.decode(String.self, forKey: .comparableType)
+            guard let f = Facts.Answer.comparableAnswerDecoders[type] else {
+                throw DecodingError.typeMismatch(
+                    ComparableAnswer.self,
+                    .init(
+                        codingPath: decoder.codingPath + [CodingKeys.comparableType],
+                        debugDescription: "Name \"\(type)\" was not registered using Facts.Answer.register(comparableAnswerType:named:)"
+                    )
+                )
+            }
+            var nested = try container.nestedUnkeyedContainer(forKey: .comparable)
+            self = .comparable(try f(decoder, &nested))
+        } else if container.contains(.equatableType) {
+            let type = try container.decode(String.self, forKey: .equatableType)
+            guard let f = Facts.Answer.equatableAnswerDecoders[type] else {
+                throw DecodingError.typeMismatch(
+                    EquatableAnswer.self,
+                    .init(
+                        codingPath: decoder.codingPath + [CodingKeys.equatableType],
+                        debugDescription: "Name \"\(type)\" was not registered using Facts.Answer.register(comparableAnswerType:named:)"
+                    )
+                )
+            }
+            var nested = try container.nestedUnkeyedContainer(forKey: .equatable)
+            self = .equatable(try f(decoder, &nested))
         } else {
-            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Facts.Answer JSON object: ' 'int', 'double', 'string'"))
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Facts.Answer JSON object: ' 'int', 'double', 'string', 'comparable', 'equatable'"))
         }
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        switch value {
-        case let it as Int:
-            try container.encode(it, forKey: .int)
-        case let it as Double:
+        switch self {
+        case .bool(let it):
+            try container.encode(it, forKey: .bool)
+        case .double(let it):
             try container.encode(it, forKey: .double)
-        case let it as String:
+        case .int(let it):
+            try container.encode(it, forKey: .int)
+        case .string(let it):
             try container.encode(it, forKey: .string)
-        default:
-            throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Facts.Answer only encodes values of type Int, Double and String, not \(String(describing: type(of: value)))"))
+        case .comparable(let it):
+            try container.encode(type(of: it).comparableAnswerTypeName, forKey: .comparableType)
+            var nested = container.nestedUnkeyedContainer(forKey: .comparable)
+            try it.encodeComparableAnswer(to: encoder, container: &nested)
+        case .equatable(let it):
+            try container.encode(type(of: it).equatableAnswerTypeName, forKey: .equatableType)
+            var nested = container.nestedUnkeyedContainer(forKey: .equatable)
+            try it.encodeEquatableAnswer(to: encoder, container: &nested)
         }
     }
 }
@@ -226,25 +290,6 @@ extension Predicate.ComparisonOperator {
         case .isGreaterThanOrEqualTo: return .isLessThanOrEqualTo
         }
     }
-
-    func compare<A: Comparable>(_ lhs: A, _ rhs: A) -> Bool {
-        switch self {
-        case .isEqualTo: return lhs == rhs
-        case .isNotEqualTo: return lhs != rhs
-        case .isLessThan: return lhs < rhs
-        case .isGreaterThan: return lhs > rhs
-        case .isLessThanOrEqualTo: return lhs <= rhs
-        case .isGreaterThanOrEqualTo: return lhs >= rhs
-        }
-    }
-
-    func same(_ lhs: Bool, _ rhs: Bool) -> Bool? {
-        switch self {
-        case .isEqualTo: return lhs == rhs
-        case .isNotEqualTo: return lhs != rhs
-        default: return nil
-        }
-    }
 }
 
 /// Evaluates the sub-`Predicate`s of compound `Predicate`s of types: `.and`, `.or`.
@@ -302,7 +347,7 @@ func comparePredicateToQuestion(predicate: Predicate, f: (Bool, Bool) -> Bool, q
     case .failed(let answerError):
         return .failed(.questionEvaluationFailed(answerError))
     case .success(let fact):
-        guard let bool = fact.value as? Bool else {
+        guard case let .bool(bool) = fact.answer else {
             return .failed(.typeMismatch)
         }
         let evaluationValue = f(predicateEvaluation.value, bool)
@@ -317,31 +362,21 @@ func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonO
     let la = lhs.answer
     let ra = rhs.answer
     let dep = dependencies.union(lhs.dependencies.union(rhs.dependencies))
+
+    let f = { Predicate.Evaluation(value: $0, dependencies: dep) }
     switch op {
     case .isEqualTo:
-        return la.isEquatable(to: ra)
-            ? .success(.init(value: la.isEqual(to: ra), dependencies: dep))
-            : .failed(.typeMismatch)
+        return la.isEqual(to: ra).mapSuccess(f)
     case .isNotEqualTo:
-        return la.isEquatable(to: ra)
-            ? .success(.init(value: la.isNotEqual(to: ra), dependencies: dep))
-            : .failed(.typeMismatch)
+        return la.isNotEqual(to: ra).mapSuccess(f)
     case .isLessThan:
-        return la.isComparable(to: ra)
-            ? .success(.init(value: la.isLess(than: ra), dependencies: dep))
-            : .failed(.typeMismatch)
+        return la.isLess(than: ra).mapSuccess(f)
     case .isLessThanOrEqualTo:
-        return la.isComparable(to: ra)
-            ? .success(.init(value: la.isLessThanOrEqual(to: ra), dependencies: dep))
-            : .failed(.typeMismatch)
+        return la.isLessThanOrEqual(to: ra).mapSuccess(f)
     case .isGreaterThan:
-        return la.isComparable(to: ra)
-            ? .success(.init(value: la.isGreater(than: ra), dependencies: dep))
-            : .failed(.typeMismatch)
+        return la.isGreater(than: ra).mapSuccess(f)
     case .isGreaterThanOrEqualTo:
-        return la.isComparable(to: ra)
-            ? .success(.init(value: la.isGreaterThanOrEqual(to: ra), dependencies: dep))
-            : .failed(.typeMismatch)
+        return la.isGreaterThanOrEqual(to: ra).mapSuccess(f)
     }
 }
 
@@ -540,7 +575,7 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
     case .constantValue:
         switch expr.constantValue {
         case let s as String:
-            return .success(.answer(.init(comparable: s)))
+            return .success(.answer(.string(s)))
         case let num as NSNumber:
             let type: CFNumberType = CFNumberGetType(num)
             switch type {
@@ -554,13 +589,13 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
                  .longType,
                  .longLongType,
                  .cfIndexType:
-                return .success(.answer(.init(comparable: num.intValue)))
+                return .success(.answer(.int(num.intValue)))
             case .float32Type,
                  .float64Type,
                  .floatType,
                  .doubleType,
                  .cgFloatType:
-                return .success(.answer(.init(comparable: num.doubleValue)))
+                return .success(.answer(.double(num.doubleValue)))
             case .charType:
                 return .success(.predicate(num.boolValue ? .true : .false))
             }
