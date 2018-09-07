@@ -183,7 +183,7 @@ extension Predicate: Codable {
         case .comparison:
             let lhs = try container.decode(Expression.self, forKey: .lhs)
             let op = try container.decode(Predicate.ComparisonOperator.self, forKey: .op)
-            let rhs = try container.decode(Expression.self, forKey: .lhs)
+            let rhs = try container.decode(Expression.self, forKey: .rhs)
             self = .comparison(lhs: lhs, op: op, rhs: rhs)
         }
     }
