@@ -72,6 +72,14 @@ public enum Rules {
         return { b in { a in f(a)(b) } }
     }
 
+    static func pipe<A, B, C>(
+        _ f: @escaping (A) -> (B),
+        _ g: @escaping (B) -> (C)
+        ) -> (A) -> (C)
+    {
+        return { a in g(f(a)) }
+    }
+
     /// Returns a unary function that returns a unary function that calls the
     /// provided binary function and returns its result.
     static func curry<A, B, C>(
@@ -102,6 +110,44 @@ extension Rules.Result: Equatable where E: Equatable, V: Equatable {
         default: return false
         }
     }
+}
+
+precedencegroup BackwardApplicationPrecedence {
+    associativity: right
+}
+infix operator <|: BackwardApplicationPrecedence
+public func <| <A, B>(f: (A) -> B, x: A) -> B {
+    return f(x)
+}
+
+precedencegroup ForwardApplicationPrecedence {
+    associativity: left
+    higherThan: BackwardApplicationPrecedence
+}
+infix operator |>: ForwardApplicationPrecedence
+public func |> <A, B>(x: A, f: (A) -> B) -> B {
+    return f(x)
+}
+
+precedencegroup ForwardCompositionPrecedence {
+    associativity: left
+    higherThan: ForwardApplicationPrecedence, BackwardApplicationPrecedence
+}
+infix operator >>>: ForwardCompositionPrecedence
+public func >>> <A, B, C>(
+    f: @escaping (A) -> B,
+    g: @escaping (B) -> C
+    ) -> ((A) -> C) {
+
+    return { g(f($0)) }
+}
+
+extension String {
+    static let trim = String.trimmingCharacters |> Rules.flip <| CharacterSet.whitespacesAndNewlines
+}
+
+extension Substring {
+    static let trimToString: (Substring) -> String = String.init >>> String.trim
 }
 
 //  Created by Jim Roepcke on 2018-06-24.
