@@ -69,12 +69,19 @@ public struct Rule: Equatable, Codable {
 }
 
 public enum HumanRuleParsingError: Error, Equatable {
+    case humanRuleNotFound
     case prioritySeparatorNotFound
+    case priorityNotFound
+    case predicateAndFactNotFound
     case invalidPriority
     case implicationOperatorNotFound
     case invalidPredicate(ConversionError)
     case equalOperatorNotFound
     case invalidLine
+    case factAnswerNotFound
+    case factAnswerAssignmentClosingDelimiterNotFound
+    case factAssignmentNotFound
+    case factAnswerNotFoundAfterAssignmentDelimiter
 }
 
 public typealias HumanRuleParsingResult = Rules.Result<HumanRuleParsingError, Rule>
@@ -93,45 +100,93 @@ public func parse(humanRule: String) -> HumanRuleParsingResult {
     // and value will not be assumed to be a `String`, it will be support
     // all the types in `Rule.Value`, which are `String`, `Int`, `Double`, and
     // `Bool`.
-    let trim = Rules.flip(String.trimmingCharacters)(.whitespacesAndNewlines)
-    let parts1 = humanRule.split(separator: ":", maxSplits: 1).map(String.init).map(trim)
+    guard !humanRule.isEmpty else {
+        return .failed(.humanRuleNotFound)
+    }
+    let parts1 = humanRule.split(separator: ":", maxSplits: 1)
+        .map(Substring.trimToString)
     guard parts1.count == 2 else {
         return .failed(.prioritySeparatorNotFound)
     }
-    guard let priority = Int(trim(parts1[0])) else {
+    let priorityString = parts1[0]
+    let afterPriority = parts1[1]
+
+    guard !priorityString.isEmpty else {
+        return .failed(.priorityNotFound)
+    }
+    guard !afterPriority.isEmpty else {
+        return .failed(.predicateAndFactNotFound)
+    }
+    guard let priority = Int(parts1[0]) else {
         return .failed(.invalidPriority)
     }
-    let afterPriority = parts1[1]
     guard let implicationOperatorRange = afterPriority.range(of: "=>") else {
         return .failed(.implicationOperatorNotFound)
     }
-    let predicateFormat = afterPriority[afterPriority.startIndex..<implicationOperatorRange.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+    let predicateFormat = afterPriority[afterPriority.startIndex..<implicationOperatorRange.lowerBound]
+        |> Substring.trimToString
+    let afterImplicationOperator = afterPriority[implicationOperatorRange.upperBound..<afterPriority.endIndex]
+        |> Substring.trimToString
 
-    let afterImplicationOperator = afterPriority[implicationOperatorRange.upperBound..<afterPriority.endIndex].trimmingCharacters(in: .whitespacesAndNewlines)
-
-    let rhsParts = afterImplicationOperator.split(separator: "=", maxSplits: 1).map(String.init).map(trim)
-    guard rhsParts.count == 2 else {
+    let factParts = afterImplicationOperator
+        .split(separator: "=", maxSplits: 1)
+        .map(Substring.trimToString)
+    guard factParts.count == 2 else {
         return .failed(.equalOperatorNotFound)
     }
-    let question = rhsParts[0]
+    let factQuestion = factParts[0]
+    let factAnswerInput = factParts[1]
 
-    // for now, leave the assignment out of the textual rule format
-    let answerAndAssignment = rhsParts[1]
-    let answer = answerAndAssignment
-    let predicateResult = convert(ns: parse(format: predicateFormat))
-    switch predicateResult {
-    case .failed(let error):
-        return .failed(.invalidPredicate(error))
-    case .success(let predicate):
-        return .success(
-            Rule(
+    let makeRule: (FactAnswer) -> (Predicate) -> Rule = { factAnswer in
+        return { predicate in
+            .init(
                 priority: priority,
                 predicate: predicate,
-                question: .init(identifier: question),
-                answer: answer,
-                assignment: nil
+                question: .init(identifier: factQuestion),
+                answer: factAnswer.answer,
+                assignment: factAnswer.assignment
             )
-        )
+        }
+    }
+    return parse(factAnswer: factAnswerInput)
+        .flatMapSuccess({ factAnswer in
+            convert(ns: parse(format: predicateFormat))
+                .bimap(
+                    HumanRuleParsingError.invalidPredicate,
+                    makeRule(factAnswer)
+            )
+        })
+}
+
+struct FactAnswer: Equatable {
+    let answer: String
+    let assignment: Brain.Assignment?
+}
+
+func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, FactAnswer> {
+    let trimmedInput = input |> String.trim
+    switch trimmedInput.first {
+    case .none:
+        return .failed(.factAnswerNotFound)
+    case "("?:
+        let parts1 = input
+            .dropFirst()
+            .split(separator: ")", maxSplits: 1)
+            .map(Substring.trimToString)
+        guard parts1.count == 2 else {
+            return .failed(.factAnswerAssignmentClosingDelimiterNotFound)
+        }
+        let assignment = parts1[0]
+        let answer = parts1[1]
+        guard !assignment.isEmpty else {
+            return .failed(.factAssignmentNotFound)
+        }
+        guard !answer.isEmpty else {
+            return .failed(.factAnswerNotFoundAfterAssignmentDelimiter)
+        }
+        return .success(.init(answer: answer, assignment: .init(identifier: assignment)))
+    default:
+        return .success(.init(answer: input, assignment: nil))
     }
 }
 

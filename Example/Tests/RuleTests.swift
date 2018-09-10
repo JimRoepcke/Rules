@@ -58,6 +58,25 @@ class RuleTests: QuickSpec {
                 }
             }
 
+            describe("parse(factAnswer:)") {
+
+                it("fails to parse empty input") {
+                    expect(parse(factAnswer: "")) == .failed(.factAnswerNotFound)
+                }
+
+                it("parses input not beginning with (") {
+                    expect(parse(factAnswer: "word")) == .success(.init(answer: "word", assignment: nil))
+                }
+
+                it("parses input beginning with (") {
+                    expect(parse(factAnswer: "(string)word")) == .success(.init(answer: "word", assignment: .init(identifier: "string")))
+                }
+
+                it("fails to parse when input begins with ( but does not contain )") {
+                    expect(parse(factAnswer: "(stringword")) == .failed(.factAnswerAssignmentClosingDelimiterNotFound)
+                }
+            }
+
             describe("parse(humanRuleFileContents:)") {
 
                 it("parses an empty file") {
