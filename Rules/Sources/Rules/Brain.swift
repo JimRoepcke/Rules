@@ -139,7 +139,7 @@ public class Brain {
         let rule = candidate.rule
         let dependencies = candidate.dependencies
         guard let assignment = rule.assignment else {
-            return .success(.init(answer: .string(rule.answer), dependencies: dependencies))
+            return .success(.init(answer: rule.answer, dependencies: dependencies))
         }
         guard let assignmentFunction = assignments[assignment] else {
             return .failed(.assignmentNotFound(assignment: assignment))

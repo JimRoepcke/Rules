@@ -59,7 +59,7 @@ public struct Rule: Equatable, Codable {
     /// this `Rule`'s RHS `question` iff this `Rule` has the highest `priority`
     /// amongst all `Rule`s for that question currently matching the state of
     /// the `Facts`.
-    public let answer: String
+    public let answer: Facts.Answer
 
     /// If `nil`, the the `Rule`'s `answer` will be returned verbatim as the
     /// answer for an inferred fact.
@@ -82,6 +82,9 @@ public enum HumanRuleParsingError: Error, Equatable {
     case factAnswerAssignmentClosingDelimiterNotFound
     case factAssignmentNotFound
     case factAnswerNotFoundAfterAssignmentDelimiter
+    case factAnswerInvalidBoolValue
+    case factAnswerInvalidDoubleValue
+    case factAnswerInvalidIntValue
 }
 
 public typealias HumanRuleParsingResult = Rules.Result<HumanRuleParsingError, Rule>
@@ -159,7 +162,7 @@ public func parse(humanRule: String) -> HumanRuleParsingResult {
 }
 
 struct FactAnswer: Equatable {
-    let answer: String
+    let answer: Facts.Answer
     let assignment: Brain.Assignment?
 }
 
@@ -184,9 +187,28 @@ func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, Fact
         guard !answer.isEmpty else {
             return .failed(.factAnswerNotFoundAfterAssignmentDelimiter)
         }
-        return .success(.init(answer: answer, assignment: .init(identifier: assignment)))
+        switch (assignment, answer) {
+        case ("bool", "true"):
+            return .success(.init(answer: .bool(true), assignment: nil))
+        case ("bool", "false"):
+            return .success(.init(answer: .bool(false), assignment: nil))
+        case ("bool", _):
+            return .failed(.factAnswerInvalidBoolValue)
+        case ("double", let answer):
+            return Double(answer)
+                .map { .success(.init(answer: .double($0), assignment: nil)) }
+                ?? .failed(.factAnswerInvalidDoubleValue)
+        case ("int", let answer):
+            return Int(answer)
+                .map { .success(.init(answer: .int($0), assignment: nil)) }
+                ?? .failed(.factAnswerInvalidIntValue)
+        case ("string", let answer):
+            return .success(.init(answer: .string(answer), assignment: nil))
+        case (let assignment, let answer):
+            return .success(.init(answer: .string(answer), assignment: .init(identifier: assignment)))
+        }
     default:
-        return .success(.init(answer: input, assignment: nil))
+        return .success(.init(answer: .string(input), assignment: nil))
     }
 }
 

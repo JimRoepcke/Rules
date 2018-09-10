@@ -122,19 +122,23 @@ func checkRHSAnswerTypeIsCorrect(parsed values: [ParsedHumanRule], spec: LinterS
             return nil
         }
         let rule = value.rule
-        switch pair.value {
-        case .any:
+        let answerConstraint = pair.value
+        switch (answerConstraint, rule.answer) {
+        case (.any, _), (.bool, .bool), (.double, .double), (.int, .int), (.string, .string):
             return nil
-        case .strings(let strings):
-            return strings.contains(rule.answer)
-                ? nil
-                : (.init(value), "the answer for \(rule.question.identifier) rules must be one of: \(strings.joined(separator: ", "))")
-        case .string:
-            return rule.assignment.map { (value, "rule with question \(rule.question.identifier) expected to have a string answer, but it has an assignment specified: \($0). Remove the assignment to use the default assignment which results in a string answer") }
-        case .bool,
-             .int,
-             .double:
-            return (value, "constraining rule with question \(rule.question.identifier) to non-string answers is not currently supported because parsing assignments from human rule files has not been implemented yet")
+        case (.strings(let strings), .string(let answer)):
+            return strings.contains(answer)
+                .ifFalse { (.init(value), "the answer for \(rule.question.identifier) rules must be one of: \(strings.joined(separator: ", "))") }
+        case (.strings(let strings), _):
+            return (.init(value), "the answer for \(rule.question.identifier) rule is not a string, but it must be one of: \(strings.joined(separator: ", "))")
+        case (.bool, _):
+            return (value, "rule with question \(rule.question.identifier) must have a bool answer")
+        case (.double, _):
+            return (value, "rule with question \(rule.question.identifier) must have a double answer")
+        case (.int, _):
+            return (value, "rule with question \(rule.question.identifier) must have a int answer")
+        case (.string, _):
+            return (value, "rule with question \(rule.question.identifier) must have a string answer")
         }
     }
     func hasCorrectRHSAnswerType(pair: (key: String, value: AnswerConstraint)) -> [RuleLint] {

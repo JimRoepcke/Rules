@@ -65,7 +65,7 @@ public class Facts {
     /// A `value` provided to `Facts` either by:
     /// - the client of `Facts` as the answer to a question with a known fact
     /// - the receiver's `Brain` as the answer to a question with an inferred fact.
-    public enum Answer: Equatable {
+    public enum Answer: Equatable, ExpressibleByBooleanLiteral, ExpressibleByFloatLiteral, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
 
         case bool(Bool)
         case double(Double)
@@ -73,6 +73,22 @@ public class Facts {
         case string(String)
         case comparable(ComparableAnswer)
         case equatable(EquatableAnswer)
+
+        public init(booleanLiteral value: Bool) {
+            self = .bool(value)
+        }
+
+        public init(floatLiteral value: Double) {
+            self = .double(value)
+        }
+
+        public init(integerLiteral value: Int) {
+            self = .int(value)
+        }
+
+        public init(stringLiteral value: String) {
+            self = .string(value)
+        }
 
         public static func == (lhs: Answer, rhs: Answer) -> Bool {
             switch (lhs, rhs) {

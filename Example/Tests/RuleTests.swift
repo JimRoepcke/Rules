@@ -69,7 +69,7 @@ class RuleTests: QuickSpec {
                 }
 
                 it("parses input beginning with (") {
-                    expect(parse(factAnswer: "(string)word")) == .success(.init(answer: "word", assignment: .init(identifier: "string")))
+                    expect(parse(factAnswer: "(string)word")) == .success(.init(answer: "word", assignment: nil))
                 }
 
                 it("fails to parse when input begins with ( but does not contain )") {
@@ -96,6 +96,30 @@ class RuleTests: QuickSpec {
                         question: "jim",
                         answer: "roepcke",
                         assignment: nil
+                    )
+                    expect(parse(humanRuleFileContents: sut)) == .success([.init(lineNumber: 1, line: sut, rule: expected)])
+                }
+
+                it("parses a file with one line with an assignment") {
+                    let sut = "10: TRUEPREDICATE => jim = (string)roepcke"
+                    let expected = Rule(
+                        priority: 10,
+                        predicate: .true,
+                        question: "jim",
+                        answer: "roepcke",
+                        assignment: nil
+                    )
+                    expect(parse(humanRuleFileContents: sut)) == .success([.init(lineNumber: 1, line: sut, rule: expected)])
+                }
+
+                it("parses a file with one line with a custom assignment") {
+                    let sut = "10: TRUEPREDICATE => jim = (custom)roepcke"
+                    let expected = Rule(
+                        priority: 10,
+                        predicate: .true,
+                        question: "jim",
+                        answer: "roepcke",
+                        assignment: "custom"
                     )
                     expect(parse(humanRuleFileContents: sut)) == .success([.init(lineNumber: 1, line: sut, rule: expected)])
                 }
