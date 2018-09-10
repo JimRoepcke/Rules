@@ -299,6 +299,7 @@ extension Predicate.ComparisonOperator {
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
 func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Bool) -> Predicate.EvaluationResult {
     var dependencies: Facts.Dependencies = []
+    // short-circuiting behaviour prevents this from using `reduce`, hence the bare loop
     for predicate in predicates {
         let result = evaluate(predicate: predicate, given: facts)
         switch result {
@@ -315,47 +316,41 @@ func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Boo
 }
 
 func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, given facts: Facts) -> Predicate.EvaluationResult {
-    let lhsEvaluation = evaluate(predicate: lhs, given: facts)
-    switch lhsEvaluation {
-    case .failed:
-        return lhsEvaluation
-    case .success(let lhsResult):
-        let rhsEvaluation = evaluate(predicate: rhs, given: facts)
-        switch rhsEvaluation {
-        case .failed:
-            return rhsEvaluation
-        case .success(let rhsResult):
-            return .success(
-                .init(
-                    value: f(lhsResult.value, rhsResult.value),
-                    dependencies: lhsResult.dependencies.union(rhsResult.dependencies)
-                )
-            )
-        }
-    }
+    return evaluate(predicate: lhs, given: facts)
+        .flatMapSuccess({ lhsResult in
+            evaluate(predicate: rhs, given: facts)
+                .mapSuccess({ rhsResult in
+                    .init(
+                        value: f(lhsResult.value, rhsResult.value),
+                        dependencies: lhsResult.dependencies.union(rhsResult.dependencies)
+                    )
+                })
+        })
 }
 
 /// only succeeds if the question evaluates to a boolean answer
 /// otherwise, .failed(.typeMismatch)
-func comparePredicateToQuestion(predicate: Predicate, f: (Bool, Bool) -> Bool, question: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
+func comparePredicateToQuestion(predicate: Predicate, f: @escaping (Bool, Bool) -> Bool, question: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
     let predicateEvaluationResult = evaluate(predicate: predicate, given: facts)
     guard case let .success(predicateEvaluation) = predicateEvaluationResult else {
         return predicateEvaluationResult
     }
-    let result = facts.ask(question: question)
-    switch result {
-    case .failed(let answerError):
-        return .failed(.questionEvaluationFailed(answerError))
-    case .success(let fact):
+    func questionEvaluationSucceeded(fact: Facts.AnswerWithDependencies) -> Predicate.EvaluationResult {
         guard case let .bool(bool) = fact.answer else {
             return .failed(.typeMismatch)
         }
-        let evaluationValue = f(predicateEvaluation.value, bool)
-        let evaluationDependencies = fact.dependencies
+        let value = f(predicateEvaluation.value, bool)
+        let dependencies = fact.dependencies
             .union(predicateEvaluation.dependencies)
             .union([question])
-        return .success(.init(value: evaluationValue, dependencies: evaluationDependencies))
+        return .success(.init(value: value, dependencies: dependencies))
     }
+    return facts.ask(question: question)
+        .bimap(
+            Predicate.EvaluationError.questionEvaluationFailed,
+            questionEvaluationSucceeded
+        )
+        .flattenSuccess()
 }
 
 func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonOperator, rhs: Facts.AnswerWithDependencies, dependencies: Facts.Dependencies) -> Predicate.EvaluationResult {
