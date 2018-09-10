@@ -150,6 +150,14 @@ extension Substring {
     static let trimToString: (Substring) -> String = String.init >>> String.trim
 }
 
+extension Bool {
+    func ifFalse<U>(_ transform: () -> U) -> U? {
+        return self ? nil : transform()
+    }
+    func ifTrue<U>(_ transform: () -> U) -> U? {
+        return self ? transform() : nil
+    }
+}
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.
 //
