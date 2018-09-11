@@ -66,6 +66,20 @@ public struct Rule: Equatable, Codable {
     /// Otherwise, the answer for an inferred fact is the result of calling the
     /// associated `Brain.AssignmentFunction`.
     public let assignment: Brain.Assignment?
+
+    public init(
+        priority: Int,
+        predicate: Predicate,
+        question: Facts.Question,
+        answer: Facts.Answer,
+        assignment: Brain.Assignment?
+        ) {
+        self.priority = priority
+        self.predicate = predicate
+        self.question = question
+        self.answer = answer
+        self.assignment = assignment
+    }
 }
 
 public enum HumanRuleParsingError: Error, Equatable {
