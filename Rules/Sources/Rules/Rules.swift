@@ -142,6 +142,8 @@ public func >>> <A, B, C>(
     return { g(f($0)) }
 }
 
+import struct Foundation.CharacterSet
+
 extension String {
     static let trim = String.trimmingCharacters |> Rules.flip <| CharacterSet.whitespacesAndNewlines
 }
