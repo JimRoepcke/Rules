@@ -182,7 +182,7 @@ extension Facts.Answer: Codable {
             var nested = try container.nestedUnkeyedContainer(forKey: .equatable)
             self = .equatable(try f(decoder, &nested))
         } else {
-            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "none of the following keys were found in the Facts.Answer JSON object: ' 'int', 'double', 'string', 'comparable', 'equatable'"))
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "none of the following keys were found in the Facts.Answer JSON object: ' 'int', 'double', 'string', 'comparable', 'equatable'"))
         }
     }
 
