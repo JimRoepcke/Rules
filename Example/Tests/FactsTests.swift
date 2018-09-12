@@ -58,6 +58,34 @@ class FactsTests: QuickSpec {
                 }
 
             }
+
+            describe("set") {
+
+                var sut: Facts?
+
+                beforeEach {
+                    sut = Facts.mockf(brain: .mockf())
+                }
+
+                afterEach {
+                    sut = nil
+                }
+
+                it("can set a string") {
+                    guard let sut = sut else { return fail() }
+                    let answer: Facts.Answer? = "test"
+                    sut.set(answer: answer, forQuestion: "test")
+                    expect(sut.known["test"]) == Facts.AnswerWithDependencies.init(answer: "test", dependencies: [])
+                }
+
+                it("can forget a string") {
+                    guard let sut = sut else { return fail() }
+                    let answer: Facts.Answer? = nil
+                    sut.know(answer: "test", forQuestion: "test")
+                    sut.set(answer: answer, forQuestion: "test")
+                    expect(sut.known["test"]).to(beNil())
+                }
+            }
         }
     }
 }

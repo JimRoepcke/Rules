@@ -232,7 +232,7 @@ public class Facts {
     }
 
     /// Convenience method for `know` and `forget` that calls one or the other
-    /// depending on whether `answer` is `.some(T)` or `.none`.
+    /// depending on whether `answer` is `.some` or `.none`.
     public func set<T>(answer: T?, forQuestion question: Question) where T: ComparableAnswer {
         return answer
             .map { know(answer: .comparable($0), forQuestion: question) }
@@ -240,10 +240,18 @@ public class Facts {
     }
 
     /// Convenience method for `know` and `forget` that calls one or the other
-    /// depending on whether `answer` is `.some(T)` or `.none`.
+    /// depending on whether `answer` is `.some` or `.none`.
     public func set<T>(answer: T?, forQuestion question: Question) where T: EquatableAnswer {
         return answer
             .map { know(answer: .equatable($0), forQuestion: question) }
+            ?? forget(answerForQuestion: question)
+    }
+
+    /// Convenience method for `know` and `forget` that calls one or the other
+    /// depending on whether `answer` is `.some` or `.none`.
+    public func set(answer: Facts.Answer?, forQuestion question: Question) {
+        return answer
+            .map { know(answer: $0, forQuestion: question) }
             ?? forget(answerForQuestion: question)
     }
 
