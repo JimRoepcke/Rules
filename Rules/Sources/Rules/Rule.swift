@@ -82,6 +82,20 @@ public struct Rule: Equatable, Codable {
     }
 }
 
+public extension Rule {
+    static let mock = Rule.init(
+        priority: 0,
+        predicate: .mock,
+        question: .mock,
+        answer: .mock,
+        assignment: nil
+    )
+}
+
+public extension Array where Element == Rule {
+    static let mock = [Rule.mock]
+}
+
 public enum HumanRuleParsingError: Error, Equatable {
     case humanRuleNotFound
     case prioritySeparatorNotFound

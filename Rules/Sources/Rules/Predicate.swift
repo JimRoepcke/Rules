@@ -77,6 +77,10 @@ public enum Predicate: Equatable {
 
 }
 
+public extension Predicate {
+    static let mock = Predicate.true
+}
+
 // MARK: - Predicate Serialization using Codable
 
 extension Predicate.Expression: Codable {

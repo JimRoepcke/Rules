@@ -346,6 +346,14 @@ public class Facts {
     }
 }
 
+public extension Facts.Question {
+    static let mock = Facts.Question(identifier: "mock")
+}
+
+public extension Facts.Answer {
+    static let mock = Facts.Answer.string("mock")
+}
+
 public protocol EquatableAnswer {
     func isEqualTo(equatableAnswer: EquatableAnswer) -> Facts.Answer.ComparisonResult
     func encodeEquatableAnswer(to encoder: Encoder, container: inout UnkeyedEncodingContainer) throws
