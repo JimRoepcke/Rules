@@ -177,7 +177,7 @@ func checkLHSAnswerTypesAreCorrect(parsed values: [ParsedHumanRule], spec: Linte
         case (.double, let x): return [(value, "type mismatch, \(question) should be compared to a double, not a \(typeName(of: x))")]
         case (.string, let x): return [(value, "type mismatch, \(question) should be compared to a string, not a \(typeName(of: x))")]
         case (.strings(let strings), .string(let x)) where strings.contains(x): return []
-        case (.strings(let strings), .string): return [(value, "\(question) may only be compared to one of: \(strings.joined(separator: ", "))")]
+        case (.strings(let strings), .string(let x)): return [(value, "\(question) may only be compared to one of: \(strings.joined(separator: ", ")), not \(x)")]
         case (.strings, let x): return [(value, "type mismatch, \(question) should be compared to a string, not a \(typeName(of: x))")]
         }
     }
