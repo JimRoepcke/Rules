@@ -8,7 +8,7 @@ target 'Rules_Example' do
   target 'Rules_Tests' do
     inherit! :search_paths
 
-    pod 'Quick', '~> 1.2.0'
-    pod 'Nimble', '~> 7.0.2'
+    pod 'Quick', '~> 1.3', :inhibit_warnings => true
+    pod 'Nimble', '~> 7.1', :inhibit_warnings => true
   end
 end
