@@ -109,7 +109,6 @@ public enum HumanRuleParsingError: Error, Equatable {
     case factAnswerNotFound
     case factAnswerAssignmentClosingDelimiterNotFound
     case factAssignmentNotFound
-    case factAnswerNotFoundAfterAssignmentDelimiter
     case factAnswerInvalidBoolValue
     case factAnswerInvalidDoubleValue
     case factAnswerInvalidIntValue
@@ -204,16 +203,13 @@ func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, Fact
             .dropFirst()
             .split(separator: ")", maxSplits: 1)
             .map(Substring.trimToString)
-        guard parts1.count == 2 else {
+        guard parts1.count == 2 || (parts1.count == 1 && !parts1[0].isEmpty) else {
             return .failed(.factAnswerAssignmentClosingDelimiterNotFound)
         }
         let assignment = parts1[0]
-        let answer = parts1[1]
+        let answer = parts1.count == 2 ? parts1[1] : ""
         guard !assignment.isEmpty else {
             return .failed(.factAssignmentNotFound)
-        }
-        guard !answer.isEmpty else {
-            return .failed(.factAnswerNotFoundAfterAssignmentDelimiter)
         }
         switch (assignment, answer) {
         case ("bool", "true"):
