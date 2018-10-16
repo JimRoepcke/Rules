@@ -79,8 +79,7 @@ func checkPredicates(parsed values: [ParsedHumanRule]) -> [RuleLint] {
         }
     }
     return values
-        .map { p in isValid(predicate: p.rule.predicate).map { (.some(p), "\($0)") } }
-        .compactMap(Rules.id)
+        .compactMap { p in isValid(predicate: p.rule.predicate).map { (.some(p), "\($0)") } }
 }
 
 func checkSpecification(parsed values: [ParsedHumanRule], spec: LinterSpecification) -> [RuleLint] {
@@ -101,8 +100,7 @@ func checkAllRHSQuestionsAreValid(parsed values: [ParsedHumanRule], spec: Linter
             : (.init(value), "rhs question \(value.rule.question.identifier) not found in the linter file")
     }
     return values
-        .map(check)
-        .compactMap(Rules.id)
+        .compactMap(check)
 }
 
 func checkFallbackRulesExist(parsed values: [ParsedHumanRule], spec: LinterSpecification) -> [RuleLint] {
@@ -112,8 +110,7 @@ func checkFallbackRulesExist(parsed values: [ParsedHumanRule], spec: LinterSpeci
             : (nil, "no fallback rule found for \(rhs)")
     }
     return spec.rhs.keys
-        .map(hasFallbackRule)
-        .compactMap(Rules.id)
+        .compactMap(hasFallbackRule)
 }
 
 func checkRHSAnswerTypeIsCorrect(parsed values: [ParsedHumanRule], spec: LinterSpecification) -> [RuleLint] {
