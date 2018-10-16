@@ -46,6 +46,27 @@ public enum Rules {
             }
         }
 
+        public func flattenFailed<F>() -> Result<F, V> where E == Result<F, V> {
+            switch self {
+            case let .failed(.success(value)): return .success(value)
+            case let .failed(.failed(error)): return .failed(error)
+            case let .success(value): return .success(value)
+            }
+        }
+
+        public func `else`(_ f: (E) -> V) -> V {
+            switch self {
+            case let .failed(error):
+                return f(error)
+            case let .success(value):
+                return value
+            }
+        }
+
+        public func analysis<U>(_ ifFailed: (E) -> U, _ ifSuccess: (V) -> U) -> U {
+            return mapSuccess(ifSuccess).else(ifFailed)
+        }
+
         public func mapSuccess<U>(_ f: (V) -> U) -> Result<E, U> {
             switch self {
             case let .failed(error):
@@ -55,8 +76,21 @@ public enum Rules {
             }
         }
 
+        public func mapFailed<F>(_ f: (E) -> F) -> Result<F, V> {
+            switch self {
+            case let .success(value):
+                return .success(value)
+            case let .failed(error):
+                return .failed(f(error))
+            }
+        }
+
         public func flatMapSuccess<U>(_ f: (V) -> Result<E, U>) -> Result<E, U> {
             return mapSuccess(f).flattenSuccess()
+        }
+
+        public func flatMapFailed<F>(_ f: (E) -> Result<F, V>) -> Result<F, V> {
+            return mapFailed(f).flattenFailed()
         }
     }
 
