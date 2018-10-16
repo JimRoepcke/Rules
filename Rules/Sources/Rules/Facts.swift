@@ -36,7 +36,7 @@ public class Facts {
 
     /// This is basically a `String`, but it's more type-safe.
     public struct Question: Hashable, Codable, ExpressibleByStringLiteral, CustomStringConvertible, CustomDebugStringConvertible {
-        public let identifier: String
+        public var identifier: String
 
         public typealias StringLiteralType = String
 

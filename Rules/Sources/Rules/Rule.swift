@@ -41,7 +41,7 @@ public struct Rule: Equatable, Codable {
     /// with lower `priority`.
     /// The RHS of a higher `priority` `Rule` that matches the current state of
     /// the `Facts` overrides lower-`priority` rules.
-    public let priority: Int
+    public var priority: Int
 
     /// The LHS condition of the `Rule`. A `Rule`'s RHS only applies if its
     /// `predicate` matches the current state of the `Facts`.
@@ -49,23 +49,23 @@ public struct Rule: Equatable, Codable {
     /// - note: The predicate can include comparison against other questions
     ///         whose values are not known in the `Facts`. The answer to
     ///         those questions will be determined recursively.
-    public let predicate: Predicate
+    public var predicate: Predicate
 
     /// The RHS `question` is the identifier which the `RHS` `answer` is
     /// associated with.
-    public let question: Facts.Question
+    public var question: Facts.Question
 
     /// The `Facts` provides this RHS `answer` as the result of a question for
     /// this `Rule`'s RHS `question` iff this `Rule` has the highest `priority`
     /// amongst all `Rule`s for that question currently matching the state of
     /// the `Facts`.
-    public let answer: Facts.Answer
+    public var answer: Facts.Answer
 
     /// If `nil`, the the `Rule`'s `answer` will be returned verbatim as the
     /// answer for an inferred fact.
     /// Otherwise, the answer for an inferred fact is the result of calling the
     /// associated `Brain.AssignmentFunction`.
-    public let assignment: Brain.Assignment?
+    public var assignment: Brain.Assignment?
 
     public init(
         priority: Int,

@@ -149,7 +149,7 @@ public class Brain {
 
     /// This is basically a `String`, but it's more type-safe.
     public struct Assignment: Hashable, Codable, ExpressibleByStringLiteral, CustomStringConvertible, CustomDebugStringConvertible {
-        public let identifier: String
+        public var identifier: String
 
         public typealias StringLiteralType = String
 
