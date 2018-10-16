@@ -72,6 +72,22 @@ class RuleTests: QuickSpec {
                     expect(parse(factAnswer: "(string)word")) == .success(.init(answer: "word", assignment: nil))
                 }
 
+                it("parses (string)") {
+                    expect(parse(factAnswer: "(string)")) == .success(.init(answer: "", assignment: nil))
+                }
+
+                it("parses (string))") {
+                    expect(parse(factAnswer: "(string))")) == .success(.init(answer: ")", assignment: nil))
+                }
+
+                it("parses (string)x)") {
+                    expect(parse(factAnswer: "(string)x)")) == .success(.init(answer: "x)", assignment: nil))
+                }
+
+                it("parses (string)()") {
+                    expect(parse(factAnswer: "(string)()")) == .success(.init(answer: "()", assignment: nil))
+                }
+
                 it("fails to parse when input begins with ( but does not contain )") {
                     expect(parse(factAnswer: "(stringword")) == .failed(.factAnswerAssignmentClosingDelimiterNotFound)
                 }

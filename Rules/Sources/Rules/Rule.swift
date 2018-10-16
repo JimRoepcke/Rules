@@ -198,7 +198,7 @@ func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, Fact
     switch trimmedInput.first {
     case .none:
         return .failed(.factAnswerNotFound)
-    case "("?:
+    case "("? where trimmedInput.contains(")"):
         let parts1 = input
             .dropFirst()
             .split(separator: ")", maxSplits: 1)
@@ -231,6 +231,8 @@ func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, Fact
         case (let assignment, let answer):
             return .success(.init(answer: .string(answer), assignment: .init(identifier: assignment)))
         }
+    case "("?:
+        return .failed(.factAnswerAssignmentClosingDelimiterNotFound)
     default:
         return .success(.init(answer: .string(input), assignment: nil))
     }
