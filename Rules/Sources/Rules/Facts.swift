@@ -30,6 +30,7 @@ public struct Facts {
     /// The questions asked while determining the answer to a question.
     public typealias Dependencies = Set<Question>
 
+    var cacheAnswers: Bool
     var known: [Question: AnswerWithDependencies]
     var inferred: [Question: AnswerWithDependencies]
 
@@ -41,8 +42,9 @@ public struct Facts {
     /// depended-on:depending-on.
     var dependencies: [Question: Dependencies]
 
-    public init(brain: Brain) {
+    public init(brain: Brain, cacheAnswers: Bool = false) {
         self.brain = brain
+        self.cacheAnswers = cacheAnswers
         self.known = [:]
         self.inferred = [:]
         self.dependencies = [:]
@@ -59,6 +61,9 @@ public struct Facts {
     }
 
     mutating func forget(inferredAnswersDependentOn question: Question) {
+        guard cacheAnswers else {
+            return
+        }
         for inferredQuestionDependentOnAnsweredQuestion in (dependencies[question] ?? []) {
             inferred.removeValue(forKey: inferredQuestionDependentOnAnsweredQuestion)
         }
@@ -66,6 +71,9 @@ public struct Facts {
     }
 
     mutating func cache(answer: AnswerWithDependencies, forQuestion question: Question) -> AnswerWithDependencies {
+        guard cacheAnswers else {
+            return answer
+        }
         inferred[question] = answer
         for dependedOnQuestion in answer.dependencies {
             dependencies[dependedOnQuestion, default: []].insert(question)
@@ -74,7 +82,7 @@ public struct Facts {
     }
 
     public mutating func ask(question: Question) -> AnswerWithDependenciesResult {
-        let answer = known[question] ?? inferred[question]
+        let answer = known[question] ?? (cacheAnswers ? inferred[question] : nil)
         return answer
             .map(AnswerWithDependenciesResult.success)
             ?? brain
