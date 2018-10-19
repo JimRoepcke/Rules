@@ -6,11 +6,9 @@
 
 /// A `Brain` can evaluate `Rule`s to infer answers to questions
 /// that are not explicitly known in the collection of `Facts`.
-///
-/// Instances of `Brain` are **not** thread-safe.
-public class Brain {
+public struct Brain {
 
-    public convenience init() {
+    public init() {
         self.init(ambiguousCandidateRulesStrategy: .fail)
     }
 
@@ -32,15 +30,13 @@ public class Brain {
     var assignments: [Assignment: AssignmentFunction]
 
     /// Adds a rule to the `Brain`.
-    /// This method is not thread-safe.
-    public func add(rule: Rule) {
+    public mutating func add(rule: Rule) {
         // TODO: don't add the rule if it's already added - need the fingerprint for this
         rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
     }
 
     /// Adds an assignment function to the `Brain`.
-    /// This method is not thread-safe.
-    public func add(assignment: Assignment, function: @escaping AssignmentFunction) {
+    public mutating func add(assignment: Assignment, function: @escaping AssignmentFunction) {
         assignments[assignment] = function
     }
 
@@ -48,7 +44,7 @@ public class Brain {
 
     typealias CandidatesResult = Rules.Result<Facts.AnswerError, [Candidate]>
 
-    func candidates(for question: Facts.Question, given facts: Facts) -> CandidatesResult {
+    func candidates(for question: Facts.Question, given facts: inout Facts) -> CandidatesResult {
         guard let rulesForQuestion = rules[question] else {
             return .failed(.noRuleFound(question: question))
         }
@@ -64,7 +60,7 @@ public class Brain {
             let maxSize = rulesSortedBySize.first?.predicate.size
             for rule in rulesSortedBySize {
                 if rule.predicate.size == maxSize || candidates.isEmpty {
-                    let evaluationResult = rule.predicate.matches(given: facts)
+                    let evaluationResult = rule.predicate.matches(given: &facts)
                     switch evaluationResult {
                     case .failed(let error):
                         return .failed(.candidateEvaluationFailed(error))
@@ -117,9 +113,9 @@ public class Brain {
     }
 
     /// only called when `facts` has no known or inferred answer for this question
-    public func ask(question: Facts.Question, given facts: Facts) -> Facts.AnswerWithDependenciesResult {
+    public func ask(question: Facts.Question, given facts: inout Facts) -> Facts.AnswerWithDependenciesResult {
         // find candidate rules
-        let candidateRulesResult = candidates(for: question, given: facts)
+        let candidateRulesResult = candidates(for: question, given: &facts)
         switch candidateRulesResult {
         case .failed(let error):
             return .failed(error)

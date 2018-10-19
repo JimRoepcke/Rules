@@ -22,7 +22,7 @@
 /// asked questions. It knows which other questions, known and inferred, that
 /// were considered when producing the inferred answer, and automatically
 /// invalidates its memory (cache) when dependencies change.
-public class Facts {
+public struct Facts {
 
     /// Generates inferred facts via `Rule`s.
     public let brain: Brain
@@ -48,24 +48,24 @@ public class Facts {
         self.dependencies = [:]
     }
 
-    public func know(answer: Answer, forQuestion question: Question) {
+    public mutating func know(answer: Answer, forQuestion question: Question) {
         known[question] = answer.asAnswerWithDependencies()
         forget(inferredAnswersDependentOn: question)
     }
 
-    public func forget(answerForQuestion question: Question) {
+    public mutating func forget(answerForQuestion question: Question) {
         known.removeValue(forKey: question)
         forget(inferredAnswersDependentOn: question)
     }
 
-    func forget(inferredAnswersDependentOn question: Question) {
+    mutating func forget(inferredAnswersDependentOn question: Question) {
         for inferredQuestionDependentOnAnsweredQuestion in (dependencies[question] ?? []) {
             inferred.removeValue(forKey: inferredQuestionDependentOnAnsweredQuestion)
         }
         dependencies.removeValue(forKey: question)
     }
 
-    func cache(answer: AnswerWithDependencies, forQuestion question: Question) -> AnswerWithDependencies {
+    mutating func cache(answer: AnswerWithDependencies, forQuestion question: Question) -> AnswerWithDependencies {
         inferred[question] = answer
         for dependedOnQuestion in answer.dependencies {
             dependencies[dependedOnQuestion, default: []].insert(question)
@@ -73,21 +73,18 @@ public class Facts {
         return answer
     }
 
-    public func ask(question: Question) -> AnswerWithDependenciesResult {
+    public mutating func ask(question: Question) -> AnswerWithDependenciesResult {
         let answer = known[question] ?? inferred[question]
         return answer
             .map(AnswerWithDependenciesResult.success)
-            ?? Fns.ask(
-                question: question,
-                given: self,
-                onFailure: Rules.id,
-                onSuccess: Fns.cache(question: question, given: self)
-        )
+            ?? brain
+                .ask(question: question, given: &self)
+                .bimap(Rules.id, { self.cache(answer: $0, forQuestion: question) })
     }
 
     /// Convenience method for `know` and `forget` that calls one or the other
     /// depending on whether `answer` is `.some` or `.none`.
-    public func set<T>(answer: T?, forQuestion question: Question) where T: ComparableAnswer {
+    public mutating func set<T>(answer: T?, forQuestion question: Question) where T: ComparableAnswer {
         return answer
             .map { know(answer: .comparable($0), forQuestion: question) }
             ?? forget(answerForQuestion: question)
@@ -95,7 +92,7 @@ public class Facts {
 
     /// Convenience method for `know` and `forget` that calls one or the other
     /// depending on whether `answer` is `.some` or `.none`.
-    public func set<T>(answer: T?, forQuestion question: Question) where T: EquatableAnswer {
+    public mutating func set<T>(answer: T?, forQuestion question: Question) where T: EquatableAnswer {
         return answer
             .map { know(answer: .equatable($0), forQuestion: question) }
             ?? forget(answerForQuestion: question)
@@ -103,13 +100,13 @@ public class Facts {
 
     /// Convenience method for `know` and `forget` that calls one or the other
     /// depending on whether `answer` is `.some` or `.none`.
-    public func set(answer: Facts.Answer?, forQuestion question: Question) {
+    public mutating func set(answer: Facts.Answer?, forQuestion question: Question) {
         return answer
             .map { know(answer: $0, forQuestion: question) }
             ?? forget(answerForQuestion: question)
     }
 
-    public func ask(_ type: Bool.Type, question: Question) -> Rules.Result<AnswerError, Bool> {
+    public mutating func ask(_ type: Bool.Type, question: Question) -> Rules.Result<AnswerError, Bool> {
         func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, Bool> {
             if case .bool(let bool) = answerWithDependencies.answer {
                 return .success(bool)
@@ -124,7 +121,7 @@ public class Facts {
         }
     }
 
-    public func ask(_ type: Int.Type, question: Question) -> Rules.Result<AnswerError, Int> {
+    public mutating func ask(_ type: Int.Type, question: Question) -> Rules.Result<AnswerError, Int> {
         func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, Int> {
             if case .int(let int) = answerWithDependencies.answer {
                 return .success(int)
@@ -139,7 +136,7 @@ public class Facts {
         }
     }
 
-    public func ask(_ type: Double.Type, question: Question) -> Rules.Result<AnswerError, Double> {
+    public mutating func ask(_ type: Double.Type, question: Question) -> Rules.Result<AnswerError, Double> {
         func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, Double> {
             if case .double(let double) = answerWithDependencies.answer {
                 return .success(double)
@@ -154,7 +151,7 @@ public class Facts {
         }
     }
 
-    public func ask(_ type: String.Type, question: Question) -> Rules.Result<AnswerError, String> {
+    public mutating func ask(_ type: String.Type, question: Question) -> Rules.Result<AnswerError, String> {
         func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, String> {
             if case .string(let string) = answerWithDependencies.answer {
                 return .success(string)
@@ -169,7 +166,7 @@ public class Facts {
         }
     }
 
-    public func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: ComparableAnswer {
+    public mutating func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: ComparableAnswer {
         func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, T> {
             if case .comparable(let comparable) = answerWithDependencies.answer, let t = comparable as? T {
                 return .success(t)
@@ -184,7 +181,7 @@ public class Facts {
         }
     }
 
-    public func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: EquatableAnswer {
+    public mutating func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: EquatableAnswer {
         func cast(_ answerWithDependencies: AnswerWithDependencies) -> Rules.Result<AnswerError, T> {
             if case .equatable(let equatable) = answerWithDependencies.answer, let t = equatable as? T {
                 return .success(t)
@@ -206,23 +203,15 @@ typealias Fns = FactsFunctions
 /// internal API of `Facts` itself
 enum FactsFunctions {
 
-    static func cache(
-        question: Facts.Question,
-        given facts: Facts
-        ) -> (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
-    {
-        return { facts.cache(answer: $0, forQuestion: question) }
-    }
-
     static func ask(
         question: Facts.Question,
-        given facts: Facts,
+        given facts: inout Facts,
         onFailure: (Facts.AnswerError) -> Facts.AnswerError,
         onSuccess: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies
         ) -> Facts.AnswerWithDependenciesResult {
         return facts
             .brain
-            .ask(question: question, given: facts)
+            .ask(question: question, given: &facts)
             .bimap(onFailure, onSuccess)
     }
 }

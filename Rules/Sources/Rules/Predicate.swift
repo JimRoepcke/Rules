@@ -71,8 +71,8 @@ public enum Predicate: Equatable {
         case questionEvaluationFailed(Facts.AnswerError)
     }
 
-    public func matches(given facts: Facts) -> EvaluationResult {
-        return evaluate(predicate: self, given: facts)
+    public func matches(given facts: inout Facts) -> EvaluationResult {
+        return evaluate(predicate: self, given: &facts)
     }
 
 }
@@ -301,11 +301,11 @@ extension Predicate.ComparisonOperator {
 ///   - predicates: the sub-`Predicate`s associated with the compound `Predicate` being evaluated.
 ///   - facts: the `Facts` to look up `questions`s from.
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
-func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Bool) -> Predicate.EvaluationResult {
+func evaluateCompound(predicates: [Predicate], given facts: inout Facts, identity: Bool) -> Predicate.EvaluationResult {
     var dependencies: Facts.Dependencies = []
     // short-circuiting behaviour prevents this from using `reduce`, hence the bare loop
     for predicate in predicates {
-        let result = evaluate(predicate: predicate, given: facts)
+        let result = evaluate(predicate: predicate, given: &facts)
         switch result {
         case .failed:
             return result
@@ -319,10 +319,10 @@ func evaluateCompound(predicates: [Predicate], given facts: Facts, identity: Boo
     return .success(.init(value: !identity, dependencies: dependencies))
 }
 
-func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, given facts: Facts) -> Predicate.EvaluationResult {
-    return evaluate(predicate: lhs, given: facts)
+func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, given facts: inout Facts) -> Predicate.EvaluationResult {
+    return evaluate(predicate: lhs, given: &facts)
         .flatMapSuccess({ lhsResult in
-            evaluate(predicate: rhs, given: facts)
+            evaluate(predicate: rhs, given: &facts)
                 .mapSuccess({ rhsResult in
                     .init(
                         value: f(lhsResult.value, rhsResult.value),
@@ -334,8 +334,8 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
 
 /// only succeeds if the question evaluates to a boolean answer
 /// otherwise, .failed(.typeMismatch)
-func comparePredicateToQuestion(predicate: Predicate, f: @escaping (Bool, Bool) -> Bool, question: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
-    let predicateEvaluationResult = evaluate(predicate: predicate, given: facts)
+func comparePredicateToQuestion(predicate: Predicate, f: @escaping (Bool, Bool) -> Bool, question: Facts.Question, given facts: inout Facts) -> Predicate.EvaluationResult {
+    let predicateEvaluationResult = evaluate(predicate: predicate, given: &facts)
     guard case let .success(predicateEvaluation) = predicateEvaluationResult else {
         return predicateEvaluationResult
     }
@@ -384,7 +384,7 @@ func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonO
 // if both questions evaluate to boolean values
 //   only succeeds if the op is == or !=
 //   otherwise .failed(.predicatesAreOnlyEquatableNotComparable)
-func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, given facts: Facts) -> Predicate.EvaluationResult {
+func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOperator, rhs: Facts.Question, given facts: inout Facts) -> Predicate.EvaluationResult {
     let lhsResult = facts.ask(question: lhs)
     switch lhsResult {
     case .failed(let answerError):
@@ -403,7 +403,7 @@ func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOper
 // only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
 // if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareQuestionToAnswer(question: Facts.Question, op: Predicate.ComparisonOperator, answer: Facts.Answer, given facts: Facts) -> Predicate.EvaluationResult {
+func compareQuestionToAnswer(question: Facts.Question, op: Predicate.ComparisonOperator, answer: Facts.Answer, given facts: inout Facts) -> Predicate.EvaluationResult {
     let questionResult = facts.ask(question: question)
     switch questionResult {
     case .failed(let answerError):
@@ -413,13 +413,13 @@ func compareQuestionToAnswer(question: Facts.Question, op: Predicate.ComparisonO
     }
 }
 
-func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationResult {
+func evaluate(predicate: Predicate, given facts: inout Facts) -> Predicate.EvaluationResult {
     switch predicate {
     case .false: return .success(.false)
     case .true: return .success(.true)
-    case .not(let predicate): return evaluate(predicate: predicate, given: facts).bimap(Rules.id, Predicate.Evaluation.invert)
-    case .and(let predicates): return evaluateCompound(predicates: predicates, given: facts, identity: false)
-    case .or(let predicates): return evaluateCompound(predicates: predicates, given: facts, identity: true)
+    case .not(let predicate): return evaluate(predicate: predicate, given: &facts).bimap(Rules.id, Predicate.Evaluation.invert)
+    case .and(let predicates): return evaluateCompound(predicates: predicates, given: &facts, identity: false)
+    case .or(let predicates): return evaluateCompound(predicates: predicates, given: &facts, identity: true)
 
     case .comparison(.predicate, .isLessThan, _),
          .comparison(.predicate, .isGreaterThan, _),
@@ -432,9 +432,9 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
         return .failed(.predicatesAreOnlyEquatableNotComparable)
 
     case .comparison(.predicate(let lhs), .isEqualTo, .predicate(let rhs)):
-        return comparePredicates(lhs: lhs, f: ==, rhs: rhs, given: facts)
+        return comparePredicates(lhs: lhs, f: ==, rhs: rhs, given: &facts)
     case .comparison(.predicate(let lhs), .isNotEqualTo, .predicate(let rhs)):
-        return comparePredicates(lhs: lhs, f: !=, rhs: rhs, given: facts)
+        return comparePredicates(lhs: lhs, f: !=, rhs: rhs, given: &facts)
 
     case .comparison(.predicate, _, .answer),
          .comparison(.answer, _, .predicate):
@@ -442,20 +442,20 @@ func evaluate(predicate: Predicate, given facts: Facts) -> Predicate.EvaluationR
 
     case .comparison(.predicate(let p), .isEqualTo, .question(let question)),
          .comparison(.question(let question), .isEqualTo, .predicate(let p)):
-        return comparePredicateToQuestion(predicate: p, f: ==, question: question, given: facts)
+        return comparePredicateToQuestion(predicate: p, f: ==, question: question, given: &facts)
 
     case .comparison(.predicate(let p), .isNotEqualTo, .question(let question)),
          .comparison(.question(let question), .isNotEqualTo, .predicate(let p)):
-        return comparePredicateToQuestion(predicate: p, f: !=, question: question, given: facts)
+        return comparePredicateToQuestion(predicate: p, f: !=, question: question, given: &facts)
 
     case .comparison(.question(let lhs), let op, .question(let rhs)):
-        return compareQuestionToQuestion(lhs: lhs, op: op, rhs: rhs, given: facts)
+        return compareQuestionToQuestion(lhs: lhs, op: op, rhs: rhs, given: &facts)
 
     case .comparison(.question(let question), let op, .answer(let answer)):
-        return compareQuestionToAnswer(question: question, op: op, answer: answer, given: facts)
+        return compareQuestionToAnswer(question: question, op: op, answer: answer, given: &facts)
 
     case .comparison(.answer(let answer), let op, .question(let question)):
-        return compareQuestionToAnswer(question: question, op: op.swapped, answer: answer, given: facts)
+        return compareQuestionToAnswer(question: question, op: op.swapped, answer: answer, given: &facts)
 
     case .comparison(.answer(let lhs), let op, .answer(let rhs)):
         return compareAnswers(lhs: lhs.asAnswerWithDependencies(), op: op, rhs: rhs.asAnswerWithDependencies(), dependencies: [])

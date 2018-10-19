@@ -207,34 +207,39 @@ class PredicateTests: QuickSpec {
 
                 it("returns false for .false") {
                     let sut = SUT.false
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == falseNoKeys
                 }
 
                 it("returns true for .true") {
                     let sut = SUT.true
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == trueNoKeys
                 }
 
                 it("returns true for .not(.false)") {
                     let sut = SUT.not(.false)
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == trueNoKeys
                 }
 
                 it("returns false for .not(.true)") {
                     let sut = SUT.not(.true)
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == falseNoKeys
                 }
 
                 it("returns false for .and([.false, .false])") {
                     let sut = SUT.and([.false, .false])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == falseNoKeys
 
@@ -242,7 +247,8 @@ class PredicateTests: QuickSpec {
 
                 it("returns false for .and([.false, .true])") {
                     let sut = SUT.and([.false, .true])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == falseNoKeys
 
@@ -250,7 +256,8 @@ class PredicateTests: QuickSpec {
 
                 it("returns false for .and([.true, .false])") {
                     let sut = SUT.and([.true, .false])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == falseNoKeys
 
@@ -258,7 +265,8 @@ class PredicateTests: QuickSpec {
 
                 it("returns true for .and([.true, .true])") {
                     let sut = SUT.and([.true, .true])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == trueNoKeys
 
@@ -266,7 +274,8 @@ class PredicateTests: QuickSpec {
 
                 it("returns false for .or([.false, .false])") {
                     let sut = SUT.or([.false, .false])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == falseNoKeys
 
@@ -274,7 +283,8 @@ class PredicateTests: QuickSpec {
 
                 it("returns true for .or([.false, .true])") {
                     let sut = SUT.or([.false, .true])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == trueNoKeys
 
@@ -282,7 +292,8 @@ class PredicateTests: QuickSpec {
 
                 it("returns true for .or([.true, .false])") {
                     let sut = SUT.or([.true, .false])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
 
                     expect(result) == trueNoKeys
 
@@ -290,91 +301,99 @@ class PredicateTests: QuickSpec {
 
                 it("returns true for .or([.true, .true])") {
                     let sut = SUT.or([.true, .true])
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
 
                 }
 
                 it("can check equality of boolean predicates") {
                     let sut = SUT.comparison(lhs: .predicate(.false), op: .isEqualTo, rhs: .predicate(.false))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can check equality of int answers") {
                     let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isEqualTo, rhs: .answer(.int(0)))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can check equality of double answers") {
                     let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isEqualTo, rhs: .answer(.int(0)))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can check equality of string answers") {
                     let sut = SUT.comparison(lhs: .answer(.string("0")), op: .isEqualTo, rhs: .answer(.string("0")))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can compare int answers") {
                     let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isLessThan, rhs: .answer(.int(1)))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can compare double answers") {
                     let sut = SUT.comparison(lhs: .answer(.int(0)), op: .isLessThan, rhs: .answer(.int(1)))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can compare string answers") {
                     let sut = SUT.comparison(lhs: .answer(.string("0")), op: .isLessThan, rhs: .answer(.string("1")))
-                    let result = evaluate(predicate: sut, given: .mockf())
+                    var facts: Facts = .mockf()
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == trueNoKeys
                 }
 
                 it("can check equality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
-                    let facts = Facts.mockf()
+                    var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
-                    let result = evaluate(predicate: sut, given: facts)
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
 
                 it("can check inequality of the same question") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isNotEqualTo, rhs: .question(.init(identifier: "test")))
-                    let facts = Facts.mockf()
+                    var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
-                    let result = evaluate(predicate: sut, given: facts)
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == .success(.init(value: false, dependencies: ["test"]))
                 }
 
                 it("can check equality of different dependencies") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test1")), op: .isEqualTo, rhs: .question(.init(identifier: "test2")))
-                    let facts = Facts.mockf()
+                    var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test1")
                     facts.know(answer: .int(1), forQuestion: "test2")
-                    let result = evaluate(predicate: sut, given: facts)
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"]))
                 }
 
                 it("can compare a question to an answer") {
                     let sut = SUT.comparison(lhs: .question(.init(identifier: "test")), op: .isEqualTo, rhs: .answer(.int(0)))
-                    let facts = Facts.mockf()
+                    var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
-                    let result = evaluate(predicate: sut, given: facts)
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
 
                 it("can compare a predicate to a question") {
                     let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .question(.init(identifier: "test")))
-                    let facts = Facts.mockf()
+                    var facts = Facts.mockf()
                     facts.know(answer: .bool(true), forQuestion: "test")
-                    let result = evaluate(predicate: sut, given: facts)
+                    let result = evaluate(predicate: sut, given: &facts)
                     expect(result) == .success(.init(value: true, dependencies: ["test"]))
                 }
             }

@@ -33,28 +33,11 @@ class FactsTests: QuickSpec {
             describe("lookup") {
 
                 it("fails to answer a question when it does not know the answer and no rules were found for that question") {
-                    var failed = false
-                    var succeeded = false
-                    let onF: (Facts.AnswerError) -> Facts.AnswerError = {
-                        failed = true
-                        return $0
-                    }
-                    let onS: (Facts.AnswerWithDependencies) -> Facts.AnswerWithDependencies = {
-                        succeeded = true
-                        return $0
-                    }
+                    var facts: Facts = .mockf()
 
-                    let result = Fns.ask(
-                        question: "missing",
-                        given: .mockf(),
-                        onFailure: onF,
-                        onSuccess: onS
-                    )
+                    let result = facts.ask(question: "missing")
 
                     expect(result) == Facts.AnswerWithDependenciesResult.failed(.noRuleFound(question: "missing"))
-
-                    expect(failed).to(beTrue())
-                    expect(succeeded).to(beFalse())
                 }
 
             }
@@ -72,14 +55,14 @@ class FactsTests: QuickSpec {
                 }
 
                 it("can set a string") {
-                    guard let sut = sut else { return fail() }
+                    guard var sut = sut else { return fail() }
                     let answer: Facts.Answer? = "test"
                     sut.set(answer: answer, forQuestion: "test")
                     expect(sut.known["test"]) == Facts.AnswerWithDependencies.init(answer: "test", dependencies: [])
                 }
 
                 it("can forget a string") {
-                    guard let sut = sut else { return fail() }
+                    guard var sut = sut else { return fail() }
                     let answer: Facts.Answer? = nil
                     sut.know(answer: "test", forQuestion: "test")
                     sut.set(answer: answer, forQuestion: "test")
