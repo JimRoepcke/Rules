@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		384741DA20FAC05800768E5E /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 384741D920FAC05800768E5E /* main.swift */; };
 		38BC676921262C4400F4382C /* Linting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38BC676821262C4400F4382C /* Linting.swift */; };
+		38FDC5D021799096003E8869 /* FactsAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FDC5CE21799096003E8869 /* FactsAnswer.swift */; };
+		38FDC5D121799096003E8869 /* FactsQuestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38FDC5CF21799096003E8869 /* FactsQuestion.swift */; };
 		FABBC52E21124F1200D66AEB /* Facts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52921124F1200D66AEB /* Facts.swift */; };
 		FABBC52F21124F1200D66AEB /* Predicate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52A21124F1200D66AEB /* Predicate.swift */; };
 		FABBC53021124F1200D66AEB /* Rule.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABBC52B21124F1200D66AEB /* Rule.swift */; };
@@ -32,6 +34,8 @@
 		384741D620FAC05800768E5E /* TextRulesToJSON */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = TextRulesToJSON; sourceTree = BUILT_PRODUCTS_DIR; };
 		384741D920FAC05800768E5E /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		38BC676821262C4400F4382C /* Linting.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Linting.swift; path = ../../Rules/Sources/Rules/Linting.swift; sourceTree = "<group>"; };
+		38FDC5CE21799096003E8869 /* FactsAnswer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FactsAnswer.swift; path = ../../Rules/Sources/Rules/FactsAnswer.swift; sourceTree = "<group>"; };
+		38FDC5CF21799096003E8869 /* FactsQuestion.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = FactsQuestion.swift; path = ../../Rules/Sources/Rules/FactsQuestion.swift; sourceTree = "<group>"; };
 		FABBC52921124F1200D66AEB /* Facts.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Facts.swift; path = ../../Rules/Sources/Rules/Facts.swift; sourceTree = "<group>"; };
 		FABBC52A21124F1200D66AEB /* Predicate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Predicate.swift; path = ../../Rules/Sources/Rules/Predicate.swift; sourceTree = "<group>"; };
 		FABBC52B21124F1200D66AEB /* Rule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Rule.swift; path = ../../Rules/Sources/Rules/Rule.swift; sourceTree = "<group>"; };
@@ -72,6 +76,8 @@
 				384741D920FAC05800768E5E /* main.swift */,
 				FABBC52D21124F1200D66AEB /* Brain.swift */,
 				FABBC52921124F1200D66AEB /* Facts.swift */,
+				38FDC5CE21799096003E8869 /* FactsAnswer.swift */,
+				38FDC5CF21799096003E8869 /* FactsQuestion.swift */,
 				38BC676821262C4400F4382C /* Linting.swift */,
 				FABBC52A21124F1200D66AEB /* Predicate.swift */,
 				FABBC52B21124F1200D66AEB /* Rule.swift */,
@@ -140,8 +146,10 @@
 				384741DA20FAC05800768E5E /* main.swift in Sources */,
 				38BC676921262C4400F4382C /* Linting.swift in Sources */,
 				FABBC53021124F1200D66AEB /* Rule.swift in Sources */,
-				FABBC52F21124F1200D66AEB /* Predicate.swift in Sources */,
 				FABBC52E21124F1200D66AEB /* Facts.swift in Sources */,
+				38FDC5D021799096003E8869 /* FactsAnswer.swift in Sources */,
+				38FDC5D121799096003E8869 /* FactsQuestion.swift in Sources */,
+				FABBC52F21124F1200D66AEB /* Predicate.swift in Sources */,
 				FABBC53221124F1200D66AEB /* Brain.swift in Sources */,
 				FABBC53121124F1200D66AEB /* Rules.swift in Sources */,
 			);
