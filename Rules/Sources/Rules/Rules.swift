@@ -95,18 +95,18 @@ public enum Rules {
     }
 
     /// The canonical identity function. Simply returns the value it's given.
-    static func id<A>(_ a: A) -> A { return a }
+    public static func id<A>(_ a: A) -> A { return a }
 
     /// Swaps the order of the parameters of a curried binary function.
     /// Helpful when trying to partially apply an instance method.
-    static func flip<A, B, C>(
+    public static func flip<A, B, C>(
         _ f: @escaping (A) -> (B) -> C
         ) -> (B) -> (A) -> C
     {
         return { b in { a in f(a)(b) } }
     }
 
-    static func pipe<A, B, C>(
+    public static func pipe<A, B, C>(
         _ f: @escaping (A) -> (B),
         _ g: @escaping (B) -> (C)
         ) -> (A) -> (C)
@@ -116,7 +116,7 @@ public enum Rules {
 
     /// Returns a unary function that returns a unary function that calls the
     /// provided binary function and returns its result.
-    static func curry<A, B, C>(
+    public static func curry<A, B, C>(
         _ f: @escaping (A, B) -> C
         ) -> (A) -> (B) -> C
     {
