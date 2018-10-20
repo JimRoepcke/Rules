@@ -121,12 +121,8 @@ public struct Facts {
             }
             return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
-        switch ask(question: question) {
-        case let .failed(error):
-            return .failed(error)
-        case let .success(answerWithDependencies):
-            return cast(answerWithDependencies)
-        }
+        return ask(question: question)
+            .flatMapSuccess(cast)
     }
 
     public mutating func ask(_ type: Int.Type, question: Question) -> Rules.Result<AnswerError, Int> {
@@ -136,12 +132,8 @@ public struct Facts {
             }
             return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
-        switch ask(question: question) {
-        case let .failed(error):
-            return .failed(error)
-        case let .success(answerWithDependencies):
-            return cast(answerWithDependencies)
-        }
+        return ask(question: question)
+            .flatMapSuccess(cast)
     }
 
     public mutating func ask(_ type: Double.Type, question: Question) -> Rules.Result<AnswerError, Double> {
@@ -151,12 +143,8 @@ public struct Facts {
             }
             return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
-        switch ask(question: question) {
-        case let .failed(error):
-            return .failed(error)
-        case let .success(answerWithDependencies):
-            return cast(answerWithDependencies)
-        }
+        return ask(question: question)
+            .flatMapSuccess(cast)
     }
 
     public mutating func ask(_ type: String.Type, question: Question) -> Rules.Result<AnswerError, String> {
@@ -166,12 +154,8 @@ public struct Facts {
             }
             return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
-        switch ask(question: question) {
-        case let .failed(error):
-            return .failed(error)
-        case let .success(answerWithDependencies):
-            return cast(answerWithDependencies)
-        }
+        return ask(question: question)
+            .flatMapSuccess(cast)
     }
 
     public mutating func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: ComparableAnswer {
@@ -181,12 +165,8 @@ public struct Facts {
             }
             return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
-        switch ask(question: question) {
-        case let .failed(error):
-            return .failed(error)
-        case let .success(answerWithDependencies):
-            return cast(answerWithDependencies)
-        }
+        return ask(question: question)
+            .flatMapSuccess(cast)
     }
 
     public mutating func ask<T>(_ type: T.Type, question: Question) -> Rules.Result<AnswerError, T> where T: EquatableAnswer {
@@ -196,12 +176,8 @@ public struct Facts {
             }
             return .failed(.answerTypeDoesNotMatchAskType(answerWithDependencies.answer))
         }
-        switch ask(question: question) {
-        case let .failed(error):
-            return .failed(error)
-        case let .success(answerWithDependencies):
-            return cast(answerWithDependencies)
-        }
+        return ask(question: question)
+            .flatMapSuccess(cast)
     }
 }
 
