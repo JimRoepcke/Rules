@@ -150,7 +150,7 @@ precedencegroup BackwardApplicationPrecedence {
     associativity: right
 }
 infix operator <|: BackwardApplicationPrecedence
-public func <| <A, B>(f: (A) -> B, x: A) -> B {
+func <| <A, B>(f: (A) -> B, x: A) -> B {
     return f(x)
 }
 
@@ -159,7 +159,7 @@ precedencegroup ForwardApplicationPrecedence {
     higherThan: BackwardApplicationPrecedence
 }
 infix operator |>: ForwardApplicationPrecedence
-public func |> <A, B>(x: A, f: (A) -> B) -> B {
+func |> <A, B>(x: A, f: (A) -> B) -> B {
     return f(x)
 }
 
@@ -168,7 +168,7 @@ precedencegroup ForwardCompositionPrecedence {
     higherThan: ForwardApplicationPrecedence, BackwardApplicationPrecedence
 }
 infix operator >>>: ForwardCompositionPrecedence
-public func >>> <A, B, C>(
+func >>> <A, B, C>(
     f: @escaping (A) -> B,
     g: @escaping (B) -> C
     ) -> ((A) -> C) {
@@ -194,6 +194,7 @@ extension Bool {
         return self ? transform() : nil
     }
 }
+
 //  Created by Jim Roepcke on 2018-06-24.
 //  Copyright © 2018- Jim Roepcke.
 //
