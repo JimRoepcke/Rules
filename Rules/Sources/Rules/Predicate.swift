@@ -417,9 +417,14 @@ func evaluate(predicate: Predicate, given facts: inout Facts) -> Predicate.Evalu
     switch predicate {
     case .false: return .success(.false)
     case .true: return .success(.true)
-    case .not(let predicate): return evaluate(predicate: predicate, given: &facts).bimap(Rules.id, Predicate.Evaluation.invert)
-    case .and(let predicates): return evaluateCompound(predicates: predicates, given: &facts, identity: false)
-    case .or(let predicates): return evaluateCompound(predicates: predicates, given: &facts, identity: true)
+
+    case .not(let predicate):
+        return evaluate(predicate: predicate, given: &facts)
+            .mapSuccess(Predicate.Evaluation.invert)
+    case .and(let predicates):
+        return evaluateCompound(predicates: predicates, given: &facts, identity: false)
+    case .or(let predicates):
+        return evaluateCompound(predicates: predicates, given: &facts, identity: true)
 
     case .comparison(.predicate, .isLessThan, _),
          .comparison(.predicate, .isGreaterThan, _),
@@ -510,7 +515,7 @@ public func convert(ns: NSPredicate) -> PredicateConversionResult {
         }
         switch compound.compoundPredicateType {
         case .not:
-            return convert(ns: subpredicates[0]).bimap(Rules.id, Predicate.not)
+            return convert(ns: subpredicates[0]).mapSuccess(Predicate.not)
         case .and:
             let subpredicateConversions = subpredicates.map(convert(ns:))
             if let failed = subpredicateConversions.first(where: { $0.value == nil }) {

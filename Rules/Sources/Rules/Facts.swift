@@ -87,7 +87,7 @@ public struct Facts {
             .map(AnswerWithDependenciesResult.success)
             ?? brain
                 .ask(question: question, given: &self)
-                .bimap(Rules.id, { self.cache(answer: $0, forQuestion: question) })
+                .mapSuccess { self.cache(answer: $0, forQuestion: question) }
     }
 
     /// Convenience method for `know` and `forget` that calls one or the other

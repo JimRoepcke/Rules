@@ -113,7 +113,7 @@ class PredicateTests: QuickSpec {
                 it("can decode false") {
                     let sut = SUT.false
                     let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
-                        = data(for: sut).bimap(Rules.id, decoded(from:))
+                        = data(for: sut).mapSuccess(decoded(from:))
                     switch result {
                     case .failed(let error): fail("\(error)")
                     case .success(.failed(let error)): fail("\(error)")
@@ -125,7 +125,7 @@ class PredicateTests: QuickSpec {
                 it("can decode true") {
                     let sut = SUT.true
                     let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
-                        = data(for: sut).bimap(Rules.id, decoded(from:))
+                        = data(for: sut).mapSuccess(decoded(from:))
                     switch result {
                     case .failed(let error): fail("\(error)")
                     case .success(.failed(let error)): fail("\(error)")
@@ -137,7 +137,7 @@ class PredicateTests: QuickSpec {
                 it("can decode .comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .predicate(.true))") {
                     let sut = SUT.comparison(lhs: .predicate(.true), op: .isEqualTo, rhs: .predicate(.true))
                     let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
-                        = data(for: sut).bimap(Rules.id, decoded(from:))
+                        = data(for: sut).mapSuccess(decoded(from:))
                     switch result {
                     case .failed(let error): fail("\(error)")
                     case .success(.failed(let error)): fail("\(error)")
@@ -160,7 +160,7 @@ class PredicateTests: QuickSpec {
                         let my = MyComparableType(x: 42)
                         let sut = SUT.comparison(lhs: .question("something"), op: .isLessThan, rhs: .answer(.comparable(my)))
                         let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
-                            = data(for: sut).bimap(Rules.id, decoded(from:))
+                            = data(for: sut).mapSuccess(decoded(from:))
                         switch result {
                         case .failed(let error): fail("\(error)")
                         case .success(.failed(let error)): fail("\(error)")
@@ -184,7 +184,7 @@ class PredicateTests: QuickSpec {
                         let my = MyEquatableType(x: 42)
                         let sut = SUT.comparison(lhs: .question("something"), op: .isEqualTo, rhs: .answer(.equatable(my)))
                         let result: Rules.Result<RulesEncodingError, RulesDecodingResult<Predicate>>
-                            = data(for: sut).bimap(Rules.id, decoded(from:))
+                            = data(for: sut).mapSuccess(decoded(from:))
                         switch result {
                         case .failed(let error): fail("\(error)")
                         case .success(.failed(let error)): fail("\(error)")
