@@ -97,17 +97,15 @@ public struct Brain {
     typealias CandidateResult = Rules.Result<Facts.AnswerError, Candidate>
 
     func chooseRule(for question: Facts.Question, amongst candidateRules: [Candidate]) -> CandidateResult {
-        if candidateRules.isEmpty {
+        switch (candidateRules.count, ambiguousCandidateRulesStrategy) {
+        case (0, _):
             return .failed(.noRuleFound(question: question))
-        } else if candidateRules.count > 1 {
-            switch ambiguousCandidateRulesStrategy {
-            case .fail:
-                return .failed(.ambiguous(question: question))
-            case .undefined:
-                /// it would be nice to be able to somehow log a warning here
-                return .success(candidateRules[0])
-            }
-        } else {
+        case (1, _):
+            return .success(candidateRules[0])
+        case (_, .fail):
+            return .failed(.ambiguous(question: question))
+        case (_, .undefined):
+            /// it would be nice to be able to somehow log a warning here
             return .success(candidateRules[0])
         }
     }
