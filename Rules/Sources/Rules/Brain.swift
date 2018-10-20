@@ -113,20 +113,14 @@ public struct Brain {
     /// only called when `facts` has no known or inferred answer for this question
     public func ask(question: Facts.Question, given facts: inout Facts) -> Facts.AnswerWithDependenciesResult {
         // find candidate rules
-        let candidateRulesResult = candidates(for: question, given: &facts)
-        switch candidateRulesResult {
-        case .failed(let error):
-            return .failed(error)
-        case .success(let candidateRules):
-            let chosenCandidateResult = chooseRule(for: question, amongst: candidateRules)
-            switch chosenCandidateResult {
-            case .failed(let error):
-                return .failed(error)
-            case .success(let candidate):
-                return answer(for: candidate, given: facts)
-                    .bimap(Facts.AnswerError.assignmentFailed, Rules.id)
-            }
-        }
+        return candidates(for: question, given: &facts)
+            .flatMapSuccess({
+                chooseRule(for: question, amongst: $0)
+                    .flatMapSuccess({
+                        answer(for: $0, given: facts)
+                            .mapFailed(Facts.AnswerError.assignmentFailed)
+                    })
+            })
     }
 
     func answer(for candidate: Candidate, given facts: Facts) -> AssignmentResult {
