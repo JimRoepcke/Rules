@@ -205,7 +205,7 @@ public struct Facts {
     }
 }
 
-typealias Fns = FactsFunctions
+private typealias Fns = FactsFunctions
 
 /// Internal functions that are testable but not part of the
 /// internal API of `Facts` itself
