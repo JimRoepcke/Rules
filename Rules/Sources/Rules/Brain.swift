@@ -9,30 +9,42 @@
 public struct Brain {
 
     public init() {
-        self.init(ambiguousCandidateRulesStrategy: .fail)
-    }
-
-    public init(ambiguousCandidateRulesStrategy: AmbiguousCandidateRulesStrategy) {
         self.rules = [:]
         self.assignments = [:]
-        self.ambiguousCandidateRulesStrategy = ambiguousCandidateRulesStrategy
+        self.ambiguousRules = [:]
     }
 
-    public init(copying other: Brain) {
-        self.rules = other.rules
-        self.assignments = [:]
-        self.ambiguousCandidateRulesStrategy = other.ambiguousCandidateRulesStrategy
-    }
-
-    /// The `rules` used to infer answers to questions
-    var rules: [Facts.Question: [Int: [Rule]]]
+    /// The `Rules` used to infer answers to questions
+    /// When added, they are sorted by priority and predicate size.
+    var rules: [Facts.Question: [Rule]]
+    /// These pairs of were found to be ambiguous when added to the receiver
+    var ambiguousRules: [Facts.Question: [(Rule, Rule)]]
 
     var assignments: [Assignment: AssignmentFunction]
 
     /// Adds a rule to the `Brain`.
-    public mutating func add(rule: Rule) {
-        // TODO: don't add the rule if it's already added - need the fingerprint for this
-        rules[rule.question, default: [:]][rule.priority, default: []].append(rule)
+    /// - returns: `true` if the there is no ambiguity in the rules, `false` otherwise.
+    public mutating func add(rules rulesToAdd: [Rule]) {
+        var questionsAdded: Set<Facts.Question> = []
+        for rule in rulesToAdd {
+            let question = rule.question
+            questionsAdded.insert(question)
+            rules[question, default: []].append(rule)
+        }
+        func markAmbiguous(rule1: Rule, rule2: Rule, `return` result: Bool) -> Bool {
+            self.ambiguousRules[rule1.question, default: []].append((rule1, rule2))
+            return result
+        }
+        for question in questionsAdded {
+            rules[question]?.sort {
+                $0.priority == $1.priority
+                    ? ($0.predicate.size == $1.predicate.size
+                        ? markAmbiguous(rule1: $0, rule2: $1, return: true) // sorts them as if $0 > $1
+                        : $0.predicate.size > $1.predicate.size
+                        )
+                    : $0.priority > $1.priority
+            }
+        }
     }
 
     /// Adds an assignment function to the `Brain`.
@@ -41,85 +53,33 @@ public struct Brain {
     }
 
     typealias Candidate = (rule: Rule, dependencies: Facts.Dependencies)
+    typealias CandidateResult = Rules.Result<Facts.AnswerError, Candidate>
 
-    typealias CandidatesResult = Rules.Result<Facts.AnswerError, [Candidate]>
-
-    func candidates(for question: Facts.Question, given facts: inout Facts) -> CandidatesResult {
+    func candidate(for question: Facts.Question, given facts: inout Facts) -> CandidateResult {
         guard let rulesForQuestion = rules[question] else {
             return .failed(.noRuleFound(question: question))
         }
-        var candidates: [Candidate] = []
-        let priorities = rulesForQuestion.keys.sorted(by: >)
-        for priority in priorities {
-            guard let rules = rulesForQuestion[priority], !rules.isEmpty else {
-                continue
-            }
-            // there are multiple candidate rules with the same priority
-            // take the one(s) with the largest predicate size
-            let rulesSortedBySize = rules.sorted { $0.predicate.size > $1.predicate.size }
-            let maxSize = rulesSortedBySize.first?.predicate.size
-            for rule in rulesSortedBySize {
-                if rule.predicate.size == maxSize || candidates.isEmpty {
-                    let evaluationResult = rule.predicate.matches(given: &facts)
-                    switch evaluationResult {
-                    case .failed(let error):
-                        return .failed(.candidateEvaluationFailed(error))
-                    case .success(let evaluation) where evaluation.value:
-                        candidates.append((rule, evaluation.dependencies))
-                    case .success:
-                        // nothing to do
-                        break // break the switch, not the loop!
-                    }
-                } else if !candidates.isEmpty {
-                    break // break the loop!
-                }
-                // otherwise continue evaluating rules at this priority
-            }
-            // if any rules matched at this priority, the lower priority rules are ineligible
-            if !candidates.isEmpty {
-                break
+        for rule in rulesForQuestion {
+            switch rule.predicate.matches(given: &facts) {
+            case .failed(let error):
+                return .failed(.candidateEvaluationFailed(error))
+            case .success(let evaluation) where evaluation.value:
+                return .success((rule, evaluation.dependencies))
+            case .success:
+                // nothing to do
+                break // break the switch, not the loop!
             }
         }
-        return .success(candidates)
-    }
-
-    public enum AmbiguousCandidateRulesStrategy: Equatable {
-        /// When more than one candidate is found, fail to answer the question.
-        case fail
-        /// When more than one candidate is found, use one of them. The process
-        /// to determine which to use is undefined and subject to change.
-        case undefined
-    }
-
-    /// Defaults to `.fail`.
-    public let ambiguousCandidateRulesStrategy: AmbiguousCandidateRulesStrategy
-
-    typealias CandidateResult = Rules.Result<Facts.AnswerError, Candidate>
-
-    func chooseRule(for question: Facts.Question, amongst candidateRules: [Candidate]) -> CandidateResult {
-        switch (candidateRules.count, ambiguousCandidateRulesStrategy) {
-        case (0, _):
-            return .failed(.noRuleFound(question: question))
-        case (1, _):
-            return .success(candidateRules[0])
-        case (_, .fail):
-            return .failed(.ambiguous(question: question))
-        case (_, .undefined):
-            /// it would be nice to be able to somehow log a warning here
-            return .success(candidateRules[0])
-        }
+        return .failed(.noRuleFound(question: question))
     }
 
     /// only called when `facts` has no known or inferred answer for this question
     public func ask(question: Facts.Question, given facts: inout Facts) -> Facts.AnswerWithDependenciesResult {
         // find candidate rules
-        return candidates(for: question, given: &facts)
+        return candidate(for: question, given: &facts)
             .flatMapSuccess({
-                chooseRule(for: question, amongst: $0)
-                    .flatMapSuccess({
-                        answer(for: $0, given: facts)
-                            .mapFailed(Facts.AnswerError.assignmentFailed)
-                    })
+                answer(for: $0, given: facts)
+                    .mapFailed(Facts.AnswerError.assignmentFailed)
             })
     }
 
