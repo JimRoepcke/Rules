@@ -11,12 +11,12 @@ Also found in this repo is a TextRulesToJSON command-line program that converts 
 
 ## Example
 
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+The example project only exists for unit tests. To run them, clone the repo, and run `pod install` from the Example directory first.
 
 ## Requirements
 
-- Xcode 9.4
-- Swift 4.1
+- Xcode 10.0
+- Swift 4.2
 
 ## Installation
 
