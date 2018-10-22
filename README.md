@@ -1,17 +1,43 @@
 # Rules
 
-[![CI Status](https://img.shields.io/travis/Jim Roepcke/Rules.svg?style=flat)](https://travis-ci.org/Jim Roepcke/Rules)
 [![Version](https://img.shields.io/cocoapods/v/Rules.svg?style=flat)](https://cocoapods.org/pods/Rules)
 [![License](https://img.shields.io/cocoapods/l/Rules.svg?style=flat)](https://cocoapods.org/pods/Rules)
 [![Platform](https://img.shields.io/cocoapods/p/Rules.svg?style=flat)](https://cocoapods.org/pods/Rules)
 
-Rules is a pod/package that provides a simple rule engine.
+Rules provides a simple forward-chaining inference rule engine that is configurable at runtime.
 
-Also found in this repo is a TextRulesToJSON command-line program that converts a text file with human-readable rules to JSON which can be easily imported into an application, as the `Rule` type in Rules conforms to Swift's `Decodable` protocol. This program can also lint the rules to help ensure they are valid before they are converted to JSON.
+When you provide a set of _known facts_, and a set of _rules_, _inferred facts_ 
+can be determined.
+
+For example:
+
+- _known fact_: the sky is blue
+- _rule_: if the sky is blue, then the weather is sunny
+- _inferrable fact_: the weather is sunny
+
+You you make much more complicated rules than this, which are
+based on more facts, even based on inferred facts.
+
+For example:
+
+- _known fact_: the sky is blue
+- _known fact_: the season is summer
+- _rule_: if the sky is blue, then the weather is sunny
+_ _rule_: if true, the beach is empty (this is a fallback rule)
+- _rule_: if the weather is sunny and the season is summer, then the beach is full
+- _inferred fact_: the beach is full
+
+- _known fact_: the season is autumn
+- _inferred fact_: the beach is empty
+
+Rules can be specified using a simple textual format, and can be decoded from JSON
+to load into a `Brain`.
+
+This repo also contains a TextRulesToJSON command-line program for macOS that can convert a text file with human-readable rules to JSON. As the `Rule` type in Rules conforms to Swift's `Decodable` protocol, this makes it easy to import rules into an application. TextRulesToJSON can also lint the rules to help ensure they are valid before they are converted to JSON.
 
 ## Example
 
-The example project only exists for unit tests. To run them, clone the repo, and run `pod install` from the Example directory first.
+The Example project only exists for unit tests. To run them, clone the repo, and run `pod install` from the Example directory first.
 
 ## Requirements
 
