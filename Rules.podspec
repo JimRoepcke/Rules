@@ -47,16 +47,11 @@ to load into a `Brain`.
   s.source           = { :git => 'https://github.com/JimRoepcke/Rules.git', :tag => s.version.to_s }
 
   s.ios.deployment_target = '9.0'
+  s.tvos.deployment_target = '10.0'
   s.watchos.deployment_target = '2.0'
+  # waiting for pod 1.6.0 to be released with fix for https://github.com/CocoaPods/CocoaPods/issues/7708
+  # s.osx.deployment_target = '10.12'
   s.swift_version = '4.2'
 
   s.source_files = 'Rules/Sources/**/*'
-  
-  # s.resource_bundles = {
-  #   'Rules' => ['Rules/Assets/*.png']
-  # }
-
-  # s.public_header_files = 'Pod/Classes/**/*.h'
-  # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
 end
