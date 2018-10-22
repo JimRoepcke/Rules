@@ -30,7 +30,7 @@ For example:
 - _known fact_: the sky is blue
 - _known fact_: the season is summer
 - _rule_: if the sky is blue, then the weather is sunny
-_ _rule_: if true, the beach is empty (this is a fallback rule)
+- _rule_: if true, the beach is empty (this is a fallback rule)
 - _rule_: if the weather is sunny and the season is summer, then the beach is full
 - _inferred fact_: the beach is full
 
