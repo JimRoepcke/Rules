@@ -18,20 +18,22 @@ public struct Brain {
     /// When added, they are sorted by priority and predicate size.
     var rules: [Facts.Question: [Rule]]
     /// These pairs of were found to be ambiguous when added to the receiver
-    var ambiguousRules: [Facts.Question: [(Rule, Rule)]]
+    public internal(set) var ambiguousRules: [Facts.Question: [(Rule, Rule)]]
 
     var assignments: [Assignment: AssignmentFunction]
 
     /// Adds a rule to the `Brain`.
     /// - returns: `true` if the there is no ambiguity in the rules, `false` otherwise.
-    public mutating func add(rules rulesToAdd: [Rule]) {
+    public mutating func add(rules rulesToAdd: [Rule]) -> Bool {
         var questionsAdded: Set<Facts.Question> = []
         for rule in rulesToAdd {
             let question = rule.question
             questionsAdded.insert(question)
             rules[question, default: []].append(rule)
         }
+        var unambiguous: Bool = true
         func markAmbiguous(rule1: Rule, rule2: Rule, `return` result: Bool) -> Bool {
+            unambiguous = false
             self.ambiguousRules[rule1.question, default: []].append((rule1, rule2))
             return result
         }
@@ -45,6 +47,7 @@ public struct Brain {
                     : $0.priority > $1.priority
             }
         }
+        return unambiguous
     }
 
     /// Adds an assignment function to the `Brain`.
