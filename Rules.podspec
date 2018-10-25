@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'Rules'
-  s.version          = '0.1.0'
+  s.version          = '0.2.0'
   s.summary          = 'A forward-chaining inference engine rule engine'
   s.description      = <<-DESC
 Rules provides a simple forward-chaining inference rule engine that is configurable at runtime.
