@@ -51,7 +51,7 @@ public struct Facts {
     }
 
     public mutating func know(answer: Answer, forQuestion question: Question) {
-        known[question] = answer.asAnswerWithDependencies()
+        known[question] = answer.asAnswerWithDependencies(ambiguousRules: [])
         forget(inferredAnswersDependentOn: question)
     }
 

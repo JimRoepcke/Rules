@@ -198,11 +198,11 @@ class PredicateTests: QuickSpec {
             describe("evaluation") {
 
                 var falseNoKeys: SUT.EvaluationResult {
-                    return .success(.init(value: false, dependencies: []))
+                    return .success(.init(value: false, dependencies: [], ambiguousRules: []))
                 }
 
                 var trueNoKeys: SUT.EvaluationResult {
-                    return .success(.init(value: true, dependencies: []))
+                    return .success(.init(value: true, dependencies: [], ambiguousRules: []))
                 }
 
                 it("returns false for .false") {
@@ -361,7 +361,7 @@ class PredicateTests: QuickSpec {
                     var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: &facts)
-                    expect(result) == .success(.init(value: true, dependencies: ["test"]))
+                    expect(result) == .success(.init(value: true, dependencies: ["test"], ambiguousRules: []))
                 }
 
                 it("can check inequality of the same question") {
@@ -369,7 +369,7 @@ class PredicateTests: QuickSpec {
                     var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: &facts)
-                    expect(result) == .success(.init(value: false, dependencies: ["test"]))
+                    expect(result) == .success(.init(value: false, dependencies: ["test"], ambiguousRules: []))
                 }
 
                 it("can check equality of different dependencies") {
@@ -378,7 +378,7 @@ class PredicateTests: QuickSpec {
                     facts.know(answer: .int(0), forQuestion: "test1")
                     facts.know(answer: .int(1), forQuestion: "test2")
                     let result = evaluate(predicate: sut, given: &facts)
-                    expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"]))
+                    expect(result) == .success(.init(value: false, dependencies: ["test1", "test2"], ambiguousRules: []))
                 }
 
                 it("can compare a question to an answer") {
@@ -386,7 +386,7 @@ class PredicateTests: QuickSpec {
                     var facts = Facts.mockf()
                     facts.know(answer: .int(0), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: &facts)
-                    expect(result) == .success(.init(value: true, dependencies: ["test"]))
+                    expect(result) == .success(.init(value: true, dependencies: ["test"], ambiguousRules: []))
                 }
 
                 it("can compare a predicate to a question") {
@@ -394,7 +394,7 @@ class PredicateTests: QuickSpec {
                     var facts = Facts.mockf()
                     facts.know(answer: .bool(true), forQuestion: "test")
                     let result = evaluate(predicate: sut, given: &facts)
-                    expect(result) == .success(.init(value: true, dependencies: ["test"]))
+                    expect(result) == .success(.init(value: true, dependencies: ["test"], ambiguousRules: []))
                 }
             }
 

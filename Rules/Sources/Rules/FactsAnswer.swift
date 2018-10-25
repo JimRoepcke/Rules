@@ -10,6 +10,7 @@ extension Facts {
     public struct AnswerWithDependencies: Equatable {
         public let answer: Answer
         public let dependencies: Facts.Dependencies
+        public let ambiguousRules: [[Rule]]
     }
 
     public typealias AnswerWithDependenciesResult = Rules.Result<AnswerError, AnswerWithDependencies>
@@ -42,7 +43,8 @@ extension Facts {
 public extension Facts.AnswerWithDependencies {
     static let mock = Facts.AnswerWithDependencies(
         answer: .mock,
-        dependencies: [.mock]
+        dependencies: [.mock],
+        ambiguousRules: []
     )
 }
 
@@ -98,8 +100,8 @@ extension Facts.Answer {
         self = answerWithDependendOnQuestions.answer
     }
 
-    func asAnswerWithDependencies(_ dependencies: Facts.Dependencies = []) -> Facts.AnswerWithDependencies {
-        return .init(answer: self, dependencies: dependencies)
+    func asAnswerWithDependencies(_ dependencies: Facts.Dependencies = [], ambiguousRules: [[Rule]]) -> Facts.AnswerWithDependencies {
+        return .init(answer: self, dependencies: dependencies, ambiguousRules: ambiguousRules)
     }
 }
 

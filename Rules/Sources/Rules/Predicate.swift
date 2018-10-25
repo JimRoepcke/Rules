@@ -56,12 +56,13 @@ public enum Predicate: Equatable {
     public struct Evaluation: Equatable {
         public let value: Bool
         public let dependencies: Facts.Dependencies
+        public let ambiguousRules: [[Rule]]
 
-        public static let `false` = Evaluation(value: false, dependencies: [])
-        public static let `true` = Evaluation(value: true, dependencies: [])
+        public static let `false` = Evaluation(value: false, dependencies: [], ambiguousRules: [])
+        public static let `true` = Evaluation(value: true, dependencies: [], ambiguousRules: [])
 
         public static func invert(_ result: Evaluation) -> Evaluation {
-            return .init(value: !result.value, dependencies: result.dependencies)
+            return .init(value: !result.value, dependencies: result.dependencies, ambiguousRules: result.ambiguousRules)
         }
     }
 
@@ -303,6 +304,7 @@ extension Predicate.ComparisonOperator {
 ///   - identity: the multiplicitive identity (`false`) for `.and`, or the additive identity `true` for `.or`.
 func evaluateCompound(predicates: [Predicate], given facts: inout Facts, identity: Bool) -> Predicate.EvaluationResult {
     var dependencies: Facts.Dependencies = []
+    var ambiguousRules: [[Rule]] = []
     // short-circuiting behaviour prevents this from using `reduce`, hence the bare loop
     for predicate in predicates {
         let result = evaluate(predicate: predicate, given: &facts)
@@ -311,12 +313,13 @@ func evaluateCompound(predicates: [Predicate], given facts: inout Facts, identit
             return result
         case let .success(result):
             dependencies.formUnion(result.dependencies)
+            ambiguousRules.append(contentsOf: result.ambiguousRules)
             if result.value == identity {
-                return .success(.init(value: identity, dependencies: dependencies))
+                return .success(.init(value: identity, dependencies: dependencies, ambiguousRules: ambiguousRules))
             }
         }
     }
-    return .success(.init(value: !identity, dependencies: dependencies))
+    return .success(.init(value: !identity, dependencies: dependencies, ambiguousRules: ambiguousRules))
 }
 
 func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, given facts: inout Facts) -> Predicate.EvaluationResult {
@@ -326,7 +329,8 @@ func comparePredicates(lhs: Predicate, f: (Bool, Bool) -> Bool, rhs: Predicate, 
                 .mapSuccess({ rhsResult in
                     .init(
                         value: f(lhsResult.value, rhsResult.value),
-                        dependencies: lhsResult.dependencies.union(rhsResult.dependencies)
+                        dependencies: lhsResult.dependencies.union(rhsResult.dependencies),
+                        ambiguousRules: lhsResult.ambiguousRules + lhsResult.ambiguousRules
                     )
                 })
         })
@@ -347,7 +351,7 @@ func comparePredicateToQuestion(predicate: Predicate, f: @escaping (Bool, Bool) 
         let dependencies = fact.dependencies
             .union(predicateEvaluation.dependencies)
             .union([question])
-        return .success(.init(value: value, dependencies: dependencies))
+        return .success(.init(value: value, dependencies: dependencies, ambiguousRules: predicateEvaluation.ambiguousRules + fact.ambiguousRules))
     }
     return facts.ask(question: question)
         .bimap(
@@ -362,7 +366,9 @@ func compareAnswers(lhs: Facts.AnswerWithDependencies, op: Predicate.ComparisonO
     let ra = rhs.answer
     let dep = dependencies.union(lhs.dependencies.union(rhs.dependencies))
 
-    let f = { Predicate.Evaluation(value: $0, dependencies: dep) }
+    let f = {
+        Predicate.Evaluation(value: $0, dependencies: dep, ambiguousRules: lhs.ambiguousRules + rhs.ambiguousRules)
+    }
     switch op {
     case .isEqualTo:
         return la.isEqual(to: ra).mapSuccess(f)
@@ -403,13 +409,13 @@ func compareQuestionToQuestion(lhs: Facts.Question, op: Predicate.ComparisonOper
 // only succeeds if the `question` evaluates to the "same" type as the `value`
 // otherwise, `.failed(.typeMismatch)`
 // if the `question` evaluates to a `.success(.bool)`, `.failed(typeMismatch)`
-func compareQuestionToAnswer(question: Facts.Question, op: Predicate.ComparisonOperator, answer: Facts.Answer, given facts: inout Facts) -> Predicate.EvaluationResult {
+func compareQuestionToAnswerInPredicate(question: Facts.Question, op: Predicate.ComparisonOperator, answer: Facts.Answer, given facts: inout Facts) -> Predicate.EvaluationResult {
     let questionResult = facts.ask(question: question)
     switch questionResult {
     case .failed(let answerError):
         return .failed(.questionEvaluationFailed(answerError))
     case .success(let questionAnswer):
-        return compareAnswers(lhs: questionAnswer, op: op, rhs: answer.asAnswerWithDependencies(), dependencies: [question])
+        return compareAnswers(lhs: questionAnswer, op: op, rhs: answer.asAnswerWithDependencies(ambiguousRules: []), dependencies: [question])
     }
 }
 
@@ -457,13 +463,13 @@ func evaluate(predicate: Predicate, given facts: inout Facts) -> Predicate.Evalu
         return compareQuestionToQuestion(lhs: lhs, op: op, rhs: rhs, given: &facts)
 
     case .comparison(.question(let question), let op, .answer(let answer)):
-        return compareQuestionToAnswer(question: question, op: op, answer: answer, given: &facts)
+        return compareQuestionToAnswerInPredicate(question: question, op: op, answer: answer, given: &facts)
 
     case .comparison(.answer(let answer), let op, .question(let question)):
-        return compareQuestionToAnswer(question: question, op: op.swapped, answer: answer, given: &facts)
+        return compareQuestionToAnswerInPredicate(question: question, op: op.swapped, answer: answer, given: &facts)
 
     case .comparison(.answer(let lhs), let op, .answer(let rhs)):
-        return compareAnswers(lhs: lhs.asAnswerWithDependencies(), op: op, rhs: rhs.asAnswerWithDependencies(), dependencies: [])
+        return compareAnswers(lhs: lhs.asAnswerWithDependencies(ambiguousRules: []), op: op, rhs: rhs.asAnswerWithDependencies(ambiguousRules: []), dependencies: [])
     }
 }
 
