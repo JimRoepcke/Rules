@@ -153,6 +153,7 @@ func typeName(of answer: Facts.Answer) -> String {
     case .double: return "double"
     case .int: return "int"
     case .string: return "string"
+    case .escapedstring: return "escapedString"
     case .comparable(let it): return type(of: it).comparableAnswerTypeName.lowercased()
     case .equatable(let it): return type(of: it).equatableAnswerTypeName.lowercased()
     }

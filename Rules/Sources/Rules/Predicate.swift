@@ -202,6 +202,8 @@ extension Facts.Answer: Codable {
             try container.encode(it, forKey: .int)
         case .string(let it):
             try container.encode(it, forKey: .string)
+        case .escapedstring(let it):
+            try container.encode(it, forKey: .string)
         case .comparable(let it):
             try container.encode(type(of: it).comparableAnswerTypeName, forKey: .comparableType)
             var nested = container.nestedUnkeyedContainer(forKey: .comparable)

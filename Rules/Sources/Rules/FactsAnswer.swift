@@ -69,6 +69,8 @@ extension Facts.Answer: Equatable {
         case (.int, _): return false
         case (.string(let l), .string(let r)): return l == r
         case (.string, _): return false
+        case (.escapedstring(let l), .escapedstring(let r)): return l == r
+        case (.escapedstring, _): return false
         case (.comparable(let l), .comparable(let r)): return l.isEqualTo(comparableAnswer: r).value ?? false
         case (.comparable, _): return false
         case (.equatable(let l), .equatable(let r)): return l.isEqualTo(equatableAnswer: r).value ?? false
@@ -116,9 +118,10 @@ extension Facts.Answer {
         case (.double(let it), .double(let other)): return .success(it == other)
         case (.int(let it), .int(let other)): return .success(it == other)
         case (.string(let it), .string(let other)): return .success(it == other)
+        case (.escapedstring(let it), .escapedstring(let other)): return .success(it == other)
         case (.comparable(let it), .comparable(let other)): return it.isEqualTo(comparableAnswer: other)
         case (.equatable(let it), .equatable(let other)): return it.isEqualTo(equatableAnswer: other)
-        case (.bool, _), (.double, _), (.int, _), (.string, _), (.comparable, _), (.equatable, _): return .failed(.typeMismatch)
+        case (.bool, _), (.double, _), (.int, _), (.string, _), (.escapedstring, _), (.comparable, _), (.equatable, _): return .failed(.typeMismatch)
         }
     }
 
@@ -131,8 +134,9 @@ extension Facts.Answer {
         case (.double(let it), .double(let other)): return .success(it < other)
         case (.int(let it), .int(let other)): return .success(it < other)
         case (.string(let it), .string(let other)): return .success(it < other)
+        case (.escapedstring(let it), .escapedstring(let other)): return .success(it < other)
         case (.comparable(let it), .comparable(let other)): return it.isLessThan(comparableAnswer: other)
-        case (.bool, _), (.double, _), (.int, _), (.string, _), (.comparable, _), (.equatable, _): return .failed(.typeMismatch)
+        case (.bool, _), (.double, _), (.int, _), (.string, _), (.escapedstring, _), (.comparable, _), (.equatable, _): return .failed(.typeMismatch)
         }
     }
 
