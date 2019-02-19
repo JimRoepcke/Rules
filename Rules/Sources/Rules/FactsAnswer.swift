@@ -35,6 +35,7 @@ extension Facts {
         case double(Double)
         case int(Int)
         case string(String)
+        case escapedstring(String)
         case comparable(ComparableAnswer)
         case equatable(EquatableAnswer)
     }
