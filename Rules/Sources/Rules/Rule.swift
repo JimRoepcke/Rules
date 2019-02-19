@@ -228,7 +228,7 @@ func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, Fact
                 ?? .failed(.factAnswerInvalidIntValue)
         case ("escapedString", let answer):
             print("dannWu: answer is \(answer)")
-            return .success(.init(answer: .escapedstring("answerrrr"), assignment: nil))
+            return .success(.init(answer: .escapedstring(answer), assignment: nil))
         case ("string", let answer):
             return .success(.init(answer: .string(answer), assignment: nil))
         case (let assignment, let answer):
