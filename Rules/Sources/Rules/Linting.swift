@@ -7,6 +7,7 @@
 enum AnswerConstraint: Equatable {
     case strings([String])
     case string
+    case escapedString
     case bool
     case int
     case double
@@ -24,6 +25,7 @@ extension AnswerConstraint: Decodable {
         } catch {
             switch try container.decode(String.self) {
             case "string": self = .string
+            case "escapedString": self = .escapedString
             case "bool": self = .bool
             case "int": self = .int
             case "double": self = .double
@@ -121,7 +123,7 @@ func checkRHSAnswerTypeIsCorrect(parsed values: [ParsedHumanRule], spec: LinterS
         let rule = value.rule
         let answerConstraint = pair.value
         switch (answerConstraint, rule.answer) {
-        case (.any, _), (.bool, .bool), (.double, .double), (.int, .int), (.string, .string):
+        case (.any, _), (.bool, .bool), (.double, .double), (.int, .int), (.string, .string), (.escapedString, .escapedstring):
             return nil
         case (.strings(let strings), .string(let answer)):
             return strings.contains(answer)
@@ -136,6 +138,8 @@ func checkRHSAnswerTypeIsCorrect(parsed values: [ParsedHumanRule], spec: LinterS
             return (value, "rule with question \(rule.question.identifier) must have a int answer")
         case (.string, _):
             return (value, "rule with question \(rule.question.identifier) must have a string answer")
+        case (.escapedString, _):
+            return (value, "rule with question \(rule.question.identifier) must have a escaped string answer")
         }
     }
     func hasCorrectRHSAnswerType(pair: (key: String, value: AnswerConstraint)) -> [RuleLint] {
@@ -177,6 +181,7 @@ func checkLHSAnswerTypesAreCorrect(parsed values: [ParsedHumanRule], spec: Linte
         case (.strings(let strings), .string(let x)) where strings.contains(x): return []
         case (.strings(let strings), .string(let x)): return [(value, "\(question) may only be compared to one of: \(strings.joined(separator: ", ")), not \(x)")]
         case (.strings, let x): return [(value, "type mismatch, \(question) should be compared to a string, not a \(typeName(of: x))")]
+        case (.escapedString, let x): return [(value, "type mismatch, \(question) should be compared to a escaped string, not a \(typeName(of: x))")]
         }
     }
     func check(predicate: Predicate, value: ParsedHumanRule) -> [RuleLint] {
@@ -203,6 +208,8 @@ func checkLHSAnswerTypesAreCorrect(parsed values: [ParsedHumanRule], spec: Linte
                 return ps + [(value, "type mismatch, \(question) should be a double but it is being compared to a bool")]
             case .string, .strings:
                 return ps + [(value, "type mismatch, \(question) should be a string but it is being compared to a bool")]
+            case .escapedString:
+                return ps + [(value, "type mismatch, \(question) should be an escaped string but it is being compared to a bool")]
             }
         case .comparison(.answer(.bool), _, .predicate):
             return []
