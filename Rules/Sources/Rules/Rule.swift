@@ -228,7 +228,8 @@ func parse(factAnswer input: String) -> Rules.Result<HumanRuleParsingError, Fact
             return Int(answer)
                 .map { .success(.init(answer: .int($0), assignment: nil)) }
                 ?? .failed(.factAnswerInvalidIntValue)
-        case ("escapedstring", let answer):
+        case ("escapedString", let answer):
+            print("dannWu: answer is \(answer)")
             let escapedstring = answer.replacingOccurrences(of: "\\\\", with: "\\")
             return .success(.init(answer: .escapedstring(escapedstring), assignment: nil))
         case ("string", let answer):

@@ -123,7 +123,7 @@ func checkRHSAnswerTypeIsCorrect(parsed values: [ParsedHumanRule], spec: LinterS
         let rule = value.rule
         let answerConstraint = pair.value
         switch (answerConstraint, rule.answer) {
-        case (.any, _), (.bool, .bool), (.double, .double), (.int, .int), (.string, .string), (.escapedString, .escapedstring):
+        case (.any, _), (.bool, .bool), (.double, .double), (.int, .int), (.string, .string), (.string, .escapedstring):
             return nil
         case (.strings(let strings), .string(let answer)):
             return strings.contains(answer)
