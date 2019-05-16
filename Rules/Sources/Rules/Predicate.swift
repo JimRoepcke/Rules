@@ -478,7 +478,10 @@ public enum ConversionError: Error, Equatable {
     case inputWasNotRecognized
     case unsupportedOperator
     case unsupportedExpression
+    case unknownExpression(NSExpression.ExpressionType)
     case unsupportedConstantValue
+    case unknownNumberType(CFNumberType)
+    case unknownPredicateType(NSCompoundPredicate.LogicalType)
 }
 
 public typealias ExpressionConversionResult = Rules.Result<ConversionError, Predicate.Expression>
@@ -536,6 +539,9 @@ public func convert(ns: NSPredicate) -> PredicateConversionResult {
             }
             let convertedSubpredicates = subpredicateConversions.compactMap { $0.value }
             return .success(.or(convertedSubpredicates))
+        @unknown default:
+            assertionFailure("Unknown predicate type: \(compound.compoundPredicateType)")
+            return .failed(.unknownPredicateType(compound.compoundPredicateType))
         }
     case let comparison as NSComparisonPredicate:
         guard let op = convert(operatorType: comparison.predicateOperatorType) else {
@@ -577,6 +583,9 @@ public func convert(operatorType: NSComparisonPredicate.Operator) -> Predicate.C
          .customSelector,
          .contains,
          .between: return nil // unsupported
+    @unknown default:
+        assertionFailure("Unknown operator type: \(operatorType)")
+        return nil
     }
 }
 
@@ -608,6 +617,9 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
                 return .success(.answer(.double(num.doubleValue)))
             case .charType:
                 return .success(.predicate(num.boolValue ? .true : .false))
+            @unknown default:
+                assertionFailure("Unknown number type: \(type)")
+                return .failed(.unknownNumberType(type))
             }
         default:
             return .failed(.unsupportedConstantValue)
@@ -626,6 +638,9 @@ public func convert(expr: NSExpression) -> ExpressionConversionResult {
          .block,
          .conditional:
         return .failed(.unsupportedExpression)
+    @unknown default:
+        assertionFailure("Unknown expression type: \(expr.expressionType)")
+        return .failed(.unknownExpression(expr.expressionType))
     }
 }
 

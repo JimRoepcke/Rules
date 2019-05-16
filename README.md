@@ -41,8 +41,8 @@ The Example project only exists for unit tests. To run them, clone the repo, and
 
 ## Requirements
 
-- Xcode 10.0
-- Swift 4.2
+- Xcode 10.2
+- Swift 5.0
 
 ## Installation
 
