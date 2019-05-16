@@ -7,7 +7,7 @@
 public extension Facts {
 
     /// This is basically a `String`, but it's more type-safe.
-    public struct Question: Hashable {
+    struct Question: Hashable {
         public var identifier: String
 
         public init(identifier: String) {
