@@ -79,6 +79,18 @@ class FactsTests: QuickSpec {
                         expect(ambiguousRules).to(beEmpty())
                     }
                 }
+
+                it("reports an error when asking an invalid question") {
+                    guard let brain = brain else { return fail() }
+                    var facts = Facts.init(brain: brain, cacheAnswers: false)
+                    let result = facts.ask(question: "foo")
+                    switch result {
+                    case let .failed(error):
+                        expect(error) == .noRuleFound(question: "foo")
+                    case .success:
+                        fail("asking \"question\" should have failed.")
+                    }
+                }
             }
 
             context("two mutually-exclusive rules sharing the same priority & predicate size") {
