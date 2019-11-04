@@ -295,7 +295,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-Rules_Example/Pods-Rules_Example-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Rules_Example/Pods-Rules_Example-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Rules/Rules.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
@@ -304,7 +304,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Rules_Example/Pods-Rules_Example-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Rules_Example/Pods-Rules_Example-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		9FA40209A20704CA1B8B8135 /* [CP] Embed Pods Frameworks */ = {
@@ -313,7 +313,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-Rules_Tests/Pods-Rules_Tests-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Rules_Tests/Pods-Rules_Tests-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Nimble/Nimble.framework",
 				"${BUILT_PRODUCTS_DIR}/Quick/Quick.framework",
 			);
@@ -324,7 +324,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Rules_Tests/Pods-Rules_Tests-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Rules_Tests/Pods-Rules_Tests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		B2150500D24D321407B3FA7B /* [CP] Check Pods Manifest.lock */ = {
