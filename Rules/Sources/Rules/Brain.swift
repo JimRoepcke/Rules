@@ -62,8 +62,10 @@ public struct Brain {
         }
         for (rule, rulePredicateSize) in rulesForQuestion where shouldContinue(rule: rule) {
             switch rule.predicate.matches(given: &facts) {
-            case .failed(let error):
-                return .failed(.candidateEvaluationFailed(error))
+            case .failed:
+                // Predicate failed, so skip this rule
+                // but don't return error because there may be other valid candidates
+                break // break the switch, not the loop!
             case .success(let evaluation) where evaluation.value:
                 candidates.append((rule, rulePredicateSize, evaluation.dependencies, evaluation.ambiguousRules))
             case .success:
