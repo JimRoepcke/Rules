@@ -57,6 +57,7 @@ class FactsTests: QuickSpec {
                 brain = nil
             }
 
+            // MARK: one rule
             context("one rule") {
 
                 beforeEach {
@@ -79,8 +80,20 @@ class FactsTests: QuickSpec {
                         expect(ambiguousRules).to(beEmpty())
                     }
                 }
-            }
 
+                it("reports an error when asking an invalid question") {
+                    guard let brain = brain else { return fail() }
+                    var facts = Facts.init(brain: brain, cacheAnswers: false)
+                    let result = facts.ask(question: "foo")
+                    switch result {
+                    case let .failed(error):
+                        expect(error) == .noRuleFound(question: "foo")
+                    case .success:
+                        fail("asking \"question\" should have failed.")
+                    }
+                }
+            }
+            // MARK: two mutually-exclusive rules sharing the same priority & predicate size
             context("two mutually-exclusive rules sharing the same priority & predicate size") {
 
                 beforeEach {
@@ -103,7 +116,7 @@ class FactsTests: QuickSpec {
                     }
                 }
             }
-
+            // MARK: two non-mutually-exclusive rules sharing the same priority & predicate size
             context("two non-mutually-exclusive rules sharing the same priority & predicate size") {
 
                 beforeEach {
@@ -130,7 +143,45 @@ class FactsTests: QuickSpec {
                     }
                 }
             }
+            // MARK: two non-mutually-exclusive rules, one with unsupported predicate
+            context("two non-mutually-exclusive rules, one with unsupported predicate") {
 
+                beforeEach {
+                    let rule1 = Rule(
+                        priority: 1,
+                        predicate: .true,
+                        question: "question",
+                        answer: "answer1",
+                        assignment: nil
+                    )
+
+                    let rule2 = Rule(
+                        priority: 1,
+                        predicate: .comparison(lhs: .question("foo"), op: .isEqualTo, rhs: .question("bar")),
+                        question: "question",
+                        answer: "answer1",
+                        assignment: nil
+                    )
+                    brain?.add(rules: [rule1, rule2])
+                }
+
+                afterEach {
+                    brain = nil
+                }
+
+                it("answers the question") {
+                    guard let brain = brain else { return fail() }
+                    var facts = Facts.init(brain: brain, cacheAnswers: false)
+                    let result = facts.ask(question: "question")
+                    switch result {
+                    case let .failed(error):
+                        fail("asking \"question\" should not have failed. received: \(error)")
+                    case let .success(answer):
+                        expect(answer.answer) == Facts.Answer.init(stringLiteral: "answer1")
+                    }
+                }
+            }
+            //MARK: two pairs of non-mutually-exclusive rules sharing the same priority & predicate size
             context("two pairs of non-mutually-exclusive rules sharing the same priority & predicate size") {
 
                 beforeEach {
